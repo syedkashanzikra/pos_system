@@ -365,11 +365,11 @@ class SalesReturnController extends Controller
     public function store(Request $request)
     {
         $user_auth = auth()->user();
-		if ($user_auth->can('sale_returns_add')){
-
+        if ($user_auth->can('sale_returns_add')) {
+    
             \DB::transaction(function () use ($request) {
                 $order = new SaleReturn;
-
+    
                 $order->date = $request->date;
                 $order->Ref = $this->getNumberOrder();
                 $order->client_id = $request->client_id;
@@ -377,82 +377,100 @@ class SalesReturnController extends Controller
                 $order->warehouse_id = $request->warehouse_id;
                 $order->tax_rate = $request->tax_rate;
                 $order->TaxNet = $request->TaxNet;
-
                 $order->discount = $request->discount;
                 $order->discount_type = $request->discount_type;
                 $order->discount_percent_total = $request->discount_percent_total;
-
                 $order->shipping = $request->shipping;
                 $order->GrandTotal = $request->GrandTotal;
                 $order->statut = 'received';
                 $order->payment_statut = 'unpaid';
                 $order->notes = $request->notes;
                 $order->user_id = Auth::user()->id;
-
+    
                 $order->save();
-
+    
+                $orderDetails = [];
                 $data = $request['details'];
                 foreach ($data as $key => $value) {
                     $unit = Unit::where('id', $value['sale_unit_id'])->first();
-
+    
                     $orderDetails[] = [
                         'sale_return_id' => $order->id,
                         'quantity' => $value['quantity'],
                         'price' => $value['Unit_price'],
-                        'sale_unit_id' =>  $value['sale_unit_id']?$value['sale_unit_id']:NULL,
+                        'sale_unit_id' => $value['sale_unit_id'] ?? NULL,
                         'TaxNet' => $value['tax_percent'],
                         'tax_method' => $value['tax_method'],
                         'discount' => $value['discount'],
                         'discount_method' => $value['discount_Method'],
                         'product_id' => $value['product_id'],
-                        'product_variant_id' => $value['product_variant_id']?$value['product_variant_id']:NULL,
+                   'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
+
                         'total' => $value['subtotal'],
                         'imei_number' => $value['imei_number'],
                     ];
-
+    
+                    // ==== Update Product Warehouse Stock ====
                     if ($value['product_variant_id']) {
                         $product_warehouse = product_warehouse::where('deleted_at', '=', null)
                             ->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $value['product_id'])
                             ->where('product_variant_id', $value['product_variant_id'])
                             ->first();
-
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
-                            }
-
-                            $product_warehouse->save();
-                        }
-
                     } else {
                         $product_warehouse = product_warehouse::where('deleted_at', '=', null)
                             ->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $value['product_id'])
                             ->first();
-
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
-                            }
-
-                            $product_warehouse->save();
-                        }
                     }
-
+    
+                    if ($unit && $product_warehouse) {
+                        if ($unit->operator == '/') {
+                            $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
+                        } else {
+                            $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
+                        }
+                        $product_warehouse->save();
+                    }
+    
+                    // ==== Update Sale Detail Quantity ====
+                    $saleDetail = SaleDetail::where('sale_id', $order->sale_id)
+                        ->where('product_id', $value['product_id'])
+                        ->when($value['product_variant_id'], function ($query) use ($value) {
+                            return $query->where('product_variant_id', $value['product_variant_id']);
+                        })
+                        ->first();
+    
+                    if ($saleDetail) {
+                        if ($value['quantity'] <= $saleDetail->quantity) {
+                            $saleDetail->quantity = $saleDetail->quantity - $value['quantity'];
+                        } else {
+                            $saleDetail->quantity = 0; // Safe fallback
+                        }
+                        $saleDetail->save();
+                    }
                 }
+    
                 SaleReturnDetails::insert($orderDetails);
+    
+                // ==== NEW: Simple GrandTotal Update ====
+                $sale = Sale::where('id', $order->sale_id)->first();
+                if ($sale) {
+                    $sale->GrandTotal = $sale->GrandTotal - $order->GrandTotal;
+                    if ($sale->GrandTotal < 0) {
+                        $sale->GrandTotal = 0; // Safety, no negative totals
+                    }
+                    $sale->save();
+                }
+                // ==== END ====
             }, 10);
-
+    
             return response()->json(['success' => true]);
-
         }
         return abort('403', __('You are not authorized'));
     }
+    
+    
 
     /**
      * Show the specified resource.
