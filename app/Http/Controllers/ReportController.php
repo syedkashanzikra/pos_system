@@ -1346,24 +1346,32 @@ class ReportController extends Controller
 
      //-----sale report-------\\
      public function sale_report(Request $request)
-    {
-        $user_auth = auth()->user();
-		if ($user_auth->can('sale_reports')){
-
-            $clients = client::where('deleted_at', '=', null)->get(['id', 'username']);
-
-            if($user_auth->is_all_warehouses){
-                $warehouses = Warehouse::where('deleted_at', '=', null)->get(['id', 'name']);
-            }else{
-                $warehouses_id = UserWarehouse::where('user_id', $user_auth->id)->pluck('warehouse_id')->toArray();
-                $warehouses = Warehouse::where('deleted_at', '=', null)->whereIn('id', $warehouses_id)->get(['id', 'name']);
-            }
-
-            return view('reports.sale_report',compact('clients','warehouses'));
-
-        }
-        return abort('403', __('You are not authorized'));
-    }
+     {
+         $user_auth = auth()->user();
+         if ($user_auth->can('sale_reports')) {
+     
+             $clients = Client::where('deleted_at', '=', null)->get(['id', 'username']);
+     
+             if ($user_auth->is_all_warehouses) {
+                 $warehouses = Warehouse::where('deleted_at', '=', null)->get(['id', 'name']);
+             } else {
+                 $warehouses_id = UserWarehouse::where('user_id', $user_auth->id)->pluck('warehouse_id')->toArray();
+                 $warehouses = Warehouse::where('deleted_at', '=', null)
+                     ->whereIn('id', $warehouses_id)
+                     ->get(['id', 'name']);
+             }
+     
+             // Get grand totals (Assuming you have Sale model and grand_total, paid_amount, due_amount columns)
+             $grand_total = Sale::where('deleted_at', '=', null)->sum('GrandTotal');
+             $total_paid = Sale::where('deleted_at', '=', null)->sum('paid_amount');
+             $total_due = $grand_total - $total_paid;
+     
+             return view('reports.sale_report', compact('clients', 'warehouses', 'grand_total', 'total_paid', 'total_due'));
+         }
+     
+         return abort('403', __('You are not authorized'));
+     }
+     
 
     
 

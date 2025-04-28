@@ -248,42 +248,26 @@
                     ],
 
                     footerCallback: function (row, data, start, end, display) {
-                        var api = this.api();
-            
-                        // Remove the formatting to get integer data for summation
-                        var intVal = function (i) {
-                            return typeof i === 'string' ? i.replace(/[\$, ]/g, '') * 1 : typeof i === 'number' ? i : 0;
-                        };
-            
-                        // Total over this page
-                        var grand_total = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
-                                return intVal(a) + intVal(b);
-                            }, 0);
+    var api = this.api();
 
-                        var total_paid = api.column(7, { page: 'current' }).data().reduce(function (a, b) {
-                            return intVal(a) + intVal(b);
-                        }, 0);
+    // Backend se injected values
+    var grand_total = {{$grand_total ?? 0}};
+    var total_paid = {{$total_paid ?? 0}};
+    var total_due = {{$total_due ?? 0}};
 
-                        var total_due = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
-                            return intVal(a) + intVal(b);
-                        }, 0);
-            
-                        // Update footer
-                        var numberRenderer = $.fn.dataTable.render.number(',', '.', 2).display;
+    var numberRenderer = $.fn.dataTable.render.number(',', '.', 2).display;
 
-                        if ($symbol_placement == 'before') {
-                            $(api.column(6).footer()).html('{{$currency}}' +' '+ numberRenderer(grand_total));
-                            $(api.column(7).footer()).html('{{$currency}}' +' '+ numberRenderer(total_paid));
-                            $(api.column(8).footer()).html('{{$currency}}' +' '+ numberRenderer(total_due));
-
-                        }else{
-                            $(api.column(6).footer()).html(numberRenderer(grand_total) +' '+ '{{$currency}}');
-                            $(api.column(7).footer()).html(numberRenderer(total_paid) +' '+ '{{$currency}}');
-                            $(api.column(8).footer()).html(numberRenderer(total_due) +' '+ '{{$currency}}');
-
-                        }
-
-                    },
+    if ($symbol_placement == 'before') {
+        $(api.column(6).footer()).html('{{$currency}}' + ' ' + numberRenderer(grand_total));
+        $(api.column(7).footer()).html('{{$currency}}' + ' ' + numberRenderer(total_paid));
+        $(api.column(8).footer()).html('{{$currency}}' + ' ' + numberRenderer(total_due));
+    } else {
+        $(api.column(6).footer()).html(numberRenderer(grand_total) + ' ' + '{{$currency}}');
+        $(api.column(7).footer()).html(numberRenderer(total_paid) + ' ' + '{{$currency}}');
+        $(api.column(8).footer()).html(numberRenderer(total_due) + ' ' + '{{$currency}}');
+    }
+}
+,
                 
                     lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
                     dom: "<'row'<'col-sm-12 col-md-7'lB><'col-sm-12 col-md-5 p-0'f>>rtip",
