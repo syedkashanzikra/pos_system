@@ -102,7 +102,7 @@ class AdjustmentsController extends Controller
                 ->addColumn('action', function($row) use ($user_auth) {
                     $btn = '';
                     if ($user_auth->can('adjustment_edit')){
-                        $btn .= '<a href="/adjustments/' .$row->id. '/edit" id="' .$row->id. '"  class="edit cursor-pointer ul-link-action text-success"
+                        $btn .= '<a href="/adjustment/adjustments/' .$row->id. '/edit" id="' .$row->id. '"  class="edit cursor-pointer ul-link-action text-success"
                         data-toggle="tooltip" data-placement="top" title="Edit"><i class="i-Edit"></i></a>';
                          $btn .= '&nbsp;&nbsp;';
                     }
