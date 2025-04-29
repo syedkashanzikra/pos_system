@@ -87,7 +87,8 @@ class UnitsController extends Controller
 
             request()->validate([
                 'name' => 'required',
-                'ShortName' => 'required',
+     'ShortName' => 'nullable|string',
+
             ]);
 
             if ($request->base_unit == '') {
@@ -146,7 +147,8 @@ class UnitsController extends Controller
 
             request()->validate([
                 'name' => 'required',
-                'ShortName' => 'required',
+                'ShortName' => 'nullable|string',
+
             ]);
 
             if ($request->base_unit == '' || $request->base_unit == $id) {
