@@ -67,7 +67,7 @@
               </div>
   
               <div class="form-group col-md-12">
-                <label for="ShortName">{{ __('translate.ShortName') }} <span class="field_required">*</span></label>
+                <label for="ShortName">{{ __('translate.ShortName') }} <span class="field_required"></span></label>
                 <input type="text" v-model="unit.ShortName" class="form-control" name="ShortName" id="ShortName"
                   placeholder="{{ __('translate.Enter_ShortName_Unit') }}">
                 <span class="error" v-if="errors && errors.ShortName">
