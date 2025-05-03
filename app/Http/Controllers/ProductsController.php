@@ -302,10 +302,16 @@ class ProductsController extends Controller
                         return $query->where('deleted_at', '=', null);
                     }),
                 ],
-                'name'         => 'required',
+                'name' => [
+                    'required',
+                    Rule::unique('products')->where(function ($query) {
+                        return $query->whereNull('deleted_at');
+                    }),
+                ],
+            
                 'category_id'  => 'required',
                 'type'         => 'required',
-                'tax_method'   => 'required',
+                'tax_method'   => 'nullable|string',
                 'unit_id'      => Rule::requiredIf($request->type != 'is_service'),
                 'cost'         => Rule::requiredIf($request->type == 'is_single'),
                 'price'        => Rule::requiredIf($request->type != 'is_variant'),

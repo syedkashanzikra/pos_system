@@ -79,7 +79,7 @@
                         </div>
 
                         <div class="form-group col-md-4">
-                            <label>{{ __('translate.Tax_Method') }} <span class="field_required">*</span></label>
+                            <label>{{ __('translate.Tax_Method') }} </label>
                             <v-select placeholder="{{ __('translate.Choose_Method') }}" v-model="product.tax_method"
                                 :reduce="(option) => option.value" :options="
                                               [
