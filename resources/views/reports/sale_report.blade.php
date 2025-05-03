@@ -13,6 +13,27 @@
 <div class="separator-breadcrumb border-top"></div>
 
 <div id="section_sale_report">
+    <div class="row mb-3" id="report_totals_row">
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('translate.Total') }}</h6>
+                <h5 id="grand_total_display" class="mb-0 text-dark fw-bold">{{$currency}} {{ number_format($grand_total ?? 0, 2) }}</h5>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('translate.Paid') }}</h6>
+                <h5 id="paid_total_display" class="mb-0 text-success fw-bold">{{$currency}} {{ number_format($total_paid ?? 0, 2) }}</h5>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('translate.Due') }}</h6>
+                <h5 id="due_total_display" class="mb-0 text-danger fw-bold">{{$currency}} {{ number_format($total_due ?? 0, 2) }}</h5>
+            </div>
+        </div>
+    </div>
+    
 
     <div class="row">
         <div class="col-md-12">
@@ -43,7 +64,7 @@
                     </thead>
                     <tbody class="height_140">
                     </tbody>
-
+{{-- 
                     <tfoot>
                         <tr>
                             <th></th>
@@ -57,7 +78,7 @@
                             <th></th>
                             <th></th>
                         </tr>
-                    </tfoot>
+                    </tfoot> --}}
                 </table>
             </div>
         </div>
