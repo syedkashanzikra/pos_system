@@ -37,7 +37,7 @@
                         </thead>
                         <tbody class="height_140">
                         </tbody>
-
+{{-- 
                         <tfoot>
                             <tr>
                                 <th>{{ __('translate.Total') }}</th>
@@ -48,7 +48,7 @@
                                 <th></th>
                                 <th></th>
                             </tr>
-                        </tfoot>
+                        </tfoot> --}}
                     </table>
                 </div>
         </div>
