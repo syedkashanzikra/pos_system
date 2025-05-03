@@ -282,7 +282,7 @@
             @endif
 
             {{-- Quotations --}}
-            @if (auth()->user()->can('quotations_view_all')  || auth()->user()->can('quotations_view_own') || auth()->user()->can('quotations_add'))
+            {{-- @if (auth()->user()->can('quotations_view_all')  || auth()->user()->can('quotations_view_own') || auth()->user()->can('quotations_add'))
                 <li>
                     <div 
                         @click="selectCollapse('quotation')"
@@ -319,7 +319,7 @@
                         </ul>
                     </div>
                 </li> 
-            @endif
+            @endif --}}
 
              {{-- Purchases --}}
             @if (auth()->user()->can('purchases_view_all') || auth()->user()->can('purchases_view_own') || auth()->user()->can('purchases_add'))
