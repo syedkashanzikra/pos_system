@@ -298,7 +298,8 @@ class ReportController extends Controller
                     $sold_quantity = 0;
                 }
 
-                $item['total_current_stock'] =  $product->type !='is_service'?$this->render_price_with_symbol_placement(number_format($total_cogs, 2, '.', ',')):0;
+                $item['total_current_stock'] = $product->type != 'is_service' ? number_format($total_cogs, 2, '.', '') : 0;
+
 
                 $data[] = $item;
 
@@ -446,7 +447,7 @@ class ReportController extends Controller
                         ->whereDate('date', '<=', $end_date)
                         ->sum('total');
 
-                        $nestedData['sold_amount'] = $this->render_price_with_symbol_placement(number_format($sold_amount, 2, '.', ','));
+                        $nestedData['sold_amount'] = number_format($sold_amount, 2, '.', '');
     
                         $lims_product_sale_data = SaleDetail::select('sale_unit_id', 'quantity')->with('sale')
                         ->where([
@@ -509,7 +510,7 @@ class ReportController extends Controller
                             })
                     ->sum('total');
 
-                    $nestedData['purchased_amount'] = $this->render_price_with_symbol_placement(number_format($purchased_amount, 2, '.', ','));
+                    $nestedData['purchased_amount'] = number_format($purchased_amount, 2, '.', '');
 
                     $lims_product_purchase_data = PurchaseDetail::select('purchase_unit_id', 'quantity')->with('purchase')
                     ->where([
@@ -582,7 +583,7 @@ class ReportController extends Controller
                         ->whereDate('date', '<=', $end_date)
                         ->sum('total');
         
-                        $nestedData['sold_amount'] = $this->render_price_with_symbol_placement(number_format($sold_amount, 2, '.', ','));
+                        $nestedData['sold_amount'] = number_format($sold_amount, 2, '.', '');
 
 
                         $lims_product_sale_data = SaleDetail::select('quantity')->with('sale')
@@ -645,7 +646,7 @@ class ReportController extends Controller
                         ->whereDate('date', '<=', $end_date)
                         ->sum('total');
 
-                        $nestedData['sold_amount'] = $this->render_price_with_symbol_placement(number_format($sold_amount, 2, '.', ','));
+                        $nestedData['sold_amount'] = number_format($sold_amount, 2, '.', '');
         
                         $lims_product_sale_data = SaleDetail::select('sale_unit_id', 'quantity')->with('sale')
                         ->where('product_id', $product->id)
@@ -710,7 +711,7 @@ class ReportController extends Controller
                         })
                         ->sum('total');
 
-                        $nestedData['purchased_amount'] = $this->render_price_with_symbol_placement(number_format($purchased_amount, 2, '.', ','));
+                        $nestedData['purchased_amount'] = number_format($purchased_amount, 2, '.', '');
                        
                         $lims_product_purchase_data = PurchaseDetail::select('purchase_unit_id', 'quantity')
                         ->with('purchase')
@@ -1140,8 +1141,8 @@ class ReportController extends Controller
 
                 //-----------------
     
-                $item['due']  =  $this->render_price_with_symbol_placement(number_format($total_amount - $total_paid, 2, '.', ','));
-        
+                $item['due'] = number_format(($total_amount - $total_paid), 2, '.', '');
+
                 //-----------------
 
                 $total_amount_return = DB::table('purchase_returns')
@@ -1491,10 +1492,11 @@ class ReportController extends Controller
                 $item['created_by']     = $sale->user->username;
                 $item['warehouse_name'] = $sale->warehouse->name;
                 $item['client_name']    = $sale->client->username;
-                $item['GrandTotal']     = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal, 2, '.', ','));
-                $item['paid_amount']    = $this->render_price_with_symbol_placement(number_format($sale->paid_amount, 2, '.', ','));
-                $item['due']            = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal - $sale->paid_amount, 2, '.', ','));
-              
+                $item['GrandTotal'] = number_format($sale->GrandTotal, 2, '.', '');
+                $item['paid_amount'] = number_format($sale->paid_amount, 2, '.', '');
+
+                $item['due'] = number_format(($sale->GrandTotal - $sale->paid_amount), 2, '.', '');
+
 
                 //payment_status
                 if($sale->payment_statut == 'paid'){
@@ -1662,10 +1664,10 @@ class ReportController extends Controller
                 $item['Ref']            = $purchase->Ref;
                 $item['warehouse_name'] = $purchase->warehouse->name;
                 $item['provider_name']  = $purchase->provider->name;
-                $item['GrandTotal']     = $this->render_price_with_symbol_placement(number_format($purchase->GrandTotal, 2, '.', ','));
-                $item['paid_amount']    = $this->render_price_with_symbol_placement(number_format($purchase->paid_amount, 2, '.', ','));
-                $item['due']            = $this->render_price_with_symbol_placement(number_format($purchase->GrandTotal - $purchase->paid_amount, 2, '.', ','));
-              
+                $item['due'] = number_format(($purchase->GrandTotal - $purchase->paid_amount), 2, '.', '');
+
+                $item['GrandTotal']  = number_format($purchase->GrandTotal, 2, '.', '');
+              $item['paid_amount'] = number_format($purchase->paid_amount, 2, '.', '');
                 //payment_status
                 if($purchase->payment_statut == 'paid'){
                     $item['payment_status'] = '<span class="badge badge-outline-success">'.trans('translate.Paid').'</span>';
