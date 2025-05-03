@@ -44,7 +44,7 @@
           </thead>
           <tbody>
           </tbody>
-          <tfoot>
+          {{-- <tfoot>
             <tr>
               <th></th>
               <th>{{ __('translate.Total') }} :</th>
@@ -56,7 +56,7 @@
                 <th></th>
                 <th></th>
             </tr>
-        </tfoot>
+        </tfoot> --}}
         </table>
       </div>
 
