@@ -389,7 +389,13 @@ class SalesReturnController extends Controller
     
                 $order->save();
     $client = Client::find($request->client_id);
-
+\App\Services\ClientLedgerService::log(
+    $request->client_id,
+    'sale_return',
+    $order->Ref,
+    0,
+    $order->GrandTotal
+);
                 $orderDetails = [];
                 $data = $request['details'];
               

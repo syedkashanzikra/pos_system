@@ -146,6 +146,13 @@ class PosController extends Controller
 
             $order->save();
 $client = Client::find($request->client_id);
+\App\Services\ClientLedgerService::log(
+    $request->client_id,
+    'pos_sale',               // or just 'sale' if you prefer
+    $order->Ref,
+    $order->GrandTotal,
+    0
+);
 
             $data = $request['details'];
             foreach ($data as $key => $value) {

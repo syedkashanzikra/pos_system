@@ -343,6 +343,16 @@ class SalesController extends Controller
             $order->notes = $request->notes;
             $order->user_id = Auth::user()->id;
             $order->save();
+
+
+            \App\Services\ClientLedgerService::log(
+    $request->client_id,
+    'sale',
+    $order->Ref,
+    $order->GrandTotal, // debit: client owes you
+    0                   // credit: they paid nothing (yet)
+);
+
             $client = Client::find($request->client_id);
 
 
