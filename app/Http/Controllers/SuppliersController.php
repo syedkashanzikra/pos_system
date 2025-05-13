@@ -117,6 +117,8 @@ class SuppliersController extends Controller
                     ->where('provider_id', $provider->id)
                     ->sum('paid_amount');
 
+                    
+
                 $total_debt =  $item['total_amount'] - $item['total_paid'];
                 $item['total_debt'] =  $this->render_price_with_symbol_placement(number_format($total_debt, 2, '.', ','));
 
@@ -451,7 +453,14 @@ class SuppliersController extends Controller
                         $payment_purchase->notes = $request['notes'];
                         $payment_purchase->user_id = Auth::user()->id;
                         $payment_purchase->save();
-
+                        
+\App\Services\ProviderLedgerService::log(
+    $request->provider_id,
+    'purchase_payment',
+    $payment_purchase->Ref,
+    $amount,
+    0
+);
                         $account = Account::where('id', $request['account_id'])->exists();
 
                         if ($account) {
@@ -559,6 +568,14 @@ class SuppliersController extends Controller
                     $payment_purchase_return->notes = $request['notes'];
                     $payment_purchase_return->user_id = Auth::user()->id;
                     $payment_purchase_return->save();
+
+\App\Services\ProviderLedgerService::log(
+    $request->provider_id,
+    'purchase_return_payment',  
+    $payment_purchase_return->Ref,
+    $amount,                   
+    0                           
+);
 
                     $account = Account::where('id', $request['account_id'])->exists();
 
