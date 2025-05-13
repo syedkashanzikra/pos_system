@@ -9,6 +9,9 @@
             <th>In</th>
             <th>Out</th>
             <th>Balance</th>
+            <th>Customer Name</th>
+            <th>Product Code</th>
+
         </tr>
     </thead>
     <tbody>
@@ -20,6 +23,8 @@
                 <td>{{ $entry->quantity_in }}</td>
                 <td>{{ $entry->quantity_out }}</td>
                 <td>{{ $entry->balance }}</td>
+                <td>{{ $entry->customer_name }}</td>
+                <td>{{ $entry->product_code }}</td>
             </tr>
         @endforeach
     </tbody>

@@ -14,16 +14,26 @@ class ProductLedgerExport implements FromCollection, WithHeadings
         $this->productId = $productId;
     }
 
-    public function collection()
-    {
-        return ProductLedger::where('product_id', $this->productId)
-            ->select('date', 'type', 'reference', 'quantity_in', 'quantity_out', 'balance')
-            ->orderBy('date')
-            ->get();
-    }
+   public function collection()
+{
+    return ProductLedger::where('product_id', $this->productId)
+        ->select(
+            'date',
+            'type',
+            'reference',
+            'customer_name',
+            'product_code',
+            'quantity_in',
+            'quantity_out',
+            'balance'
+        )
+        ->orderBy('date')
+        ->get();
+}
 
-    public function headings(): array
-    {
-        return ['Date', 'Type', 'Reference', 'In', 'Out', 'Balance'];
-    }
+public function headings(): array
+{
+    return ['Date', 'Type', 'Reference', 'Customer Name', 'Product Code', 'In', 'Out', 'Balance'];
+}
+
 }
