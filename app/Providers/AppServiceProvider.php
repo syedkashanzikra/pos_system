@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\App;
 use App\utils\helpers;
 use Illuminate\Support\Facades\View;
 use Config;
+use App\Models\AdjustmentDetail;
+use App\Observers\AdjustmentDetailObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -36,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
                 'currency'         => $currency,
                 'symbol_placement' => $symbol_placement,
             ]);
-
+            AdjustmentDetail::observe(AdjustmentDetailObserver::class);
 
         } catch (\Exception $e) {
 
