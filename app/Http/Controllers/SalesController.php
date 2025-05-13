@@ -318,96 +318,104 @@ class SalesController extends Controller
      * @return Renderable
      */
     public function store(Request $request)
-    {
-        
-        $user_auth = auth()->user();
-		if ($user_auth->can('sales_add')){
+{
+    $user_auth = auth()->user();
 
-            \DB::transaction(function () use ($request) {
-                $order = new Sale;
+    if ($user_auth->can('sales_add')) {
 
-                $order->is_pos = 0;
-                $order->date = $request->date;
-                $order->Ref = 'SO-' . date("Ymd") . '-'. date("his");
-                $order->client_id = $request->client_id;
-                $order->GrandTotal = $request->GrandTotal;
-                $order->warehouse_id = $request->warehouse_id;
-                $order->tax_rate = $request->tax_rate;
-                $order->TaxNet = $request->TaxNet;
-                
-                $order->discount = $request->discount;
-                $order->discount_type = $request->discount_type;
-                $order->discount_percent_total = $request->discount_percent_total;
+        \DB::transaction(function () use ($request) {
+            $order = new Sale;
 
-                $order->shipping = $request->shipping;
-                $order->statut = 'completed';
-                $order->payment_statut = 'unpaid';
-                $order->notes = $request->notes;
-                $order->user_id = Auth::user()->id;
-                $order->save();
-
-                $data = $request['details'];
-                foreach ($data as $key => $value) {
-                    $unit = Unit::where('id', $value['sale_unit_id'])
-                        ->first();
-                    $orderDetails[] = [
-                        'date' => $request->date,
-                        'sale_id' => $order->id,
-                        'sale_unit_id' =>  $value['sale_unit_id']?$value['sale_unit_id']:NULL,
-                        'quantity' => $value['quantity'],
-                        'price' => $value['Unit_price'],
-                        'TaxNet' => $value['tax_percent'],
-                        'tax_method' => $value['tax_method'],
-                        'discount' => $value['discount'],
-                        'discount_method' => $value['discount_Method'],
-                        'product_id' => $value['product_id'],
-                        'product_variant_id' => $value['product_variant_id']?$value['product_variant_id']:NULL,
-                        'total' => $value['subtotal'],
-                        'imei_number' => $value['imei_number'],
-                    ];
+            $order->is_pos = 0;
+            $order->date = $request->date;
+            $order->Ref = 'SO-' . date("Ymd") . '-' . date("his");
+            $order->client_id = $request->client_id;
+            $order->GrandTotal = $request->GrandTotal;
+            $order->warehouse_id = $request->warehouse_id;
+            $order->tax_rate = $request->tax_rate;
+            $order->TaxNet = $request->TaxNet;
+            $order->discount = $request->discount;
+            $order->discount_type = $request->discount_type;
+            $order->discount_percent_total = $request->discount_percent_total;
+            $order->shipping = $request->shipping;
+            $order->statut = 'completed';
+            $order->payment_statut = 'unpaid';
+            $order->notes = $request->notes;
+            $order->user_id = Auth::user()->id;
+            $order->save();
+            $client = Client::find($request->client_id);
 
 
-                    if ($value['product_variant_id']) {
-                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                            ->where('warehouse_id', $order->warehouse_id)
-                            ->where('product_id', $value['product_id'])
-                            ->where('product_variant_id', $value['product_variant_id'])
-                            ->first();
+            $data = $request['details'];
 
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte -= $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte -= $value['quantity'] * $unit->operator_value;
-                            }
-                            $product_warehouse->save();
-                        }
+            foreach ($data as $key => $value) {
+                $unit = Unit::where('id', $value['sale_unit_id'])->first();
 
-                    } else {
-                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                            ->where('warehouse_id', $order->warehouse_id)
-                            ->where('product_id', $value['product_id'])
-                            ->first();
-
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte -= $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte -= $value['quantity'] * $unit->operator_value;
-                            }
-                            $product_warehouse->save();
-                        }
-                    }
+                // Calculate converted quantity
+                $convertedQty = $value['quantity'];
+                if ($unit) {
+                    $convertedQty = $unit->operator == '/'
+                        ? $value['quantity'] / $unit->operator_value
+                        : $value['quantity'] * $unit->operator_value;
                 }
-                SaleDetail::insert($orderDetails);
 
-            }, 10);
+                $orderDetails[] = [
+                    'date' => $request->date,
+                    'sale_id' => $order->id,
+                    'sale_unit_id' => $value['sale_unit_id'] ?? NULL,
+                    'quantity' => $value['quantity'],
+                    'price' => $value['Unit_price'],
+                    'TaxNet' => $value['tax_percent'],
+                    'tax_method' => $value['tax_method'],
+                    'discount' => $value['discount'],
+                    'discount_method' => $value['discount_Method'],
+                    'product_id' => $value['product_id'],
+                   
+  'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
+                    'total' => $value['subtotal'],
+                    'imei_number' => $value['imei_number'],
+                ];
 
-            return response()->json(['success' => true]);
+                // Stock update
+                if (!empty($value['product_variant_id'])) {
+                    $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                        ->where('warehouse_id', $order->warehouse_id)
+                        ->where('product_id', $value['product_id'])
+                        ->where('product_variant_id', $value['product_variant_id'])
+                        ->first();
+                } else {
+                    $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                        ->where('warehouse_id', $order->warehouse_id)
+                        ->where('product_id', $value['product_id'])
+                        ->first();
+                }
 
-        }
-        return abort('403', __('You are not authorized'));
+                if ($product_warehouse && $unit) {
+                    $product_warehouse->qte -= $convertedQty;
+                    $product_warehouse->save();
+                }
+
+              \App\Services\LedgerService::log(
+    $value['product_id'],
+    'sale',
+    $order->Ref,
+    0,
+    $convertedQty,
+    $client->username ?? 'Walk-In Customer',
+    $value['code'] ?? null
+);
+
+            }
+
+            SaleDetail::insert($orderDetails);
+        }, 10);
+
+        return response()->json(['success' => true]);
     }
+
+    return abort('403', __('You are not authorized'));
+}
+
 
     /**
      * Show the specified resource.

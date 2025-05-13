@@ -388,30 +388,40 @@ class SalesReturnController extends Controller
                 $order->user_id = Auth::user()->id;
     
                 $order->save();
-    
+    $client = Client::find($request->client_id);
+
                 $orderDetails = [];
                 $data = $request['details'];
+              
                 foreach ($data as $key => $value) {
                     $unit = Unit::where('id', $value['sale_unit_id'])->first();
-    
+                
+                    // Convert quantity
+                    $convertedQty = $value['quantity'];
+                    if ($unit) {
+                        $convertedQty = $unit->operator == '/'
+                            ? $value['quantity'] / $unit->operator_value
+                            : $value['quantity'] * $unit->operator_value;
+                    }
+                
                     $orderDetails[] = [
-                        'sale_return_id' => $order->id,
-                        'quantity' => $value['quantity'],
-                        'price' => $value['Unit_price'],
-                        'sale_unit_id' => $value['sale_unit_id'] ?? NULL,
-                        'TaxNet' => $value['tax_percent'],
-                        'tax_method' => $value['tax_method'],
-                        'discount' => $value['discount'],
-                        'discount_method' => $value['discount_Method'],
-                        'product_id' => $value['product_id'],
-                   'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
+                        'sale_return_id'     => $order->id,
+                        'quantity'           => $value['quantity'],
+                        'price'              => $value['Unit_price'],
+                       'sale_unit_id' => !empty($value['sale_unit_id']) && \App\Models\Unit::find($value['sale_unit_id']) ? $value['sale_unit_id'] : NULL,
 
-                        'total' => $value['subtotal'],
-                        'imei_number' => $value['imei_number'],
+                        'TaxNet'             => $value['tax_percent'],
+                        'tax_method'         => $value['tax_method'],
+                        'discount'           => $value['discount'],
+                        'discount_method'    => $value['discount_Method'],
+                        'product_id'         => $value['product_id'],
+                        'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
+                        'total'              => $value['subtotal'],
+                        'imei_number'        => $value['imei_number'],
                     ];
-    
-                    // ==== Update Product Warehouse Stock ====
-                    if ($value['product_variant_id']) {
+                
+                    // === Stock restore ===
+                    if (!empty($value['product_variant_id'])) {
                         $product_warehouse = product_warehouse::where('deleted_at', '=', null)
                             ->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $value['product_id'])
@@ -423,34 +433,38 @@ class SalesReturnController extends Controller
                             ->where('product_id', $value['product_id'])
                             ->first();
                     }
-    
+                
                     if ($unit && $product_warehouse) {
-                        if ($unit->operator == '/') {
-                            $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
-                        } else {
-                            $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
-                        }
+                        $product_warehouse->qte += $convertedQty;
                         $product_warehouse->save();
                     }
-    
-                    // ==== Update Sale Detail Quantity ====
+                
+                    // === Ledger Entry ===
+        \App\Services\LedgerService::log(
+    $value['product_id'],
+    'sale',
+    $order->Ref,
+    0,
+    $convertedQty,
+    $client->username ?? 'Walk-In Customer',
+    $value['code'] ?? null
+);
+
+                
+                    // === SaleDetail update ===
                     $saleDetail = SaleDetail::where('sale_id', $order->sale_id)
                         ->where('product_id', $value['product_id'])
                         ->when($value['product_variant_id'], function ($query) use ($value) {
                             return $query->where('product_variant_id', $value['product_variant_id']);
                         })
                         ->first();
-    
+                
                     if ($saleDetail) {
-                        if ($value['quantity'] <= $saleDetail->quantity) {
-                            $saleDetail->quantity = $saleDetail->quantity - $value['quantity'];
-                        } else {
-                            $saleDetail->quantity = 0; // Safe fallback
-                        }
+                        $saleDetail->quantity = max(0, $saleDetail->quantity - $value['quantity']);
                         $saleDetail->save();
                     }
                 }
-    
+                
                 SaleReturnDetails::insert($orderDetails);
     
                 // ==== NEW: Simple GrandTotal Update ====
