@@ -637,14 +637,14 @@
                                
                             @endcan
 
-                            @can('report_inventaire')
+                            {{-- @can('report_inventaire')
                                 <li>
                                     @include('components.sidebar.child-navitem', [
                                         'href'=>'/reports/report_stock', 
                                         'title'=> __('translate.Inventory_report')
                                     ])
                                 </li>
-                            @endcan
+                            @endcan --}}
                             @can('report_products')
                                 <li>
                                     @include('components.sidebar.child-navitem', [
