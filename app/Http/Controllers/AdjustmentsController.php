@@ -17,7 +17,7 @@ use DB;
 use App\utils\helpers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-
+use App\Services\LedgerService;
 class AdjustmentsController extends Controller
 {
 
@@ -151,89 +151,99 @@ class AdjustmentsController extends Controller
     //-------------- Store New adjustment ---------------\\
 
     public function store(Request $request)
-    {
-        $user_auth = auth()->user();
-		if ($user_auth->can('adjustment_add')){
+{
+    $user_auth = auth()->user();
+    if ($user_auth->can('adjustment_add')) {
 
-            \DB::transaction(function () use ($request) {
-                $order = new Adjustment;
-                $order->date = $request->date;
-                $order->Ref = $this->getNumberOrder();
-                $order->warehouse_id = $request->warehouse_id;
-                $order->notes = $request->notes;
-                $order->items = sizeof($request['details']);
-                $order->user_id = Auth::user()->id;
-                $order->save();
+        \DB::transaction(function () use ($request) {
+            $order = new Adjustment;
+            $order->date = $request->date;
+            $order->Ref = $this->getNumberOrder();
+            $order->warehouse_id = $request->warehouse_id;
+            $order->notes = $request->notes;
+            $order->items = sizeof($request['details']);
+            $order->user_id = Auth::user()->id;
+            $order->save();
 
-                $data = $request['details'];
-                $i = 0;
-                foreach ($data as $key => $value) {
-                    $orderDetails[] = [
-                        'adjustment_id' => $order->id,
-                        'quantity' => $value['quantity'],
-                        'product_id' => $value['product_id'],
-                        'product_variant_id' => $value['product_variant_id']?$value['product_variant_id']:NULL,
-                        'type' => $value['type'],
-                    ];
+            $data = $request['details'];
+            $i = 0;
+            foreach ($data as $key => $value) {
+                $orderDetails[] = [
+                    'adjustment_id' => $order->id,
+                    'quantity' => $value['quantity'],
+                    'product_id' => $value['product_id'],
+                    'product_variant_id' => $value['product_variant_id'] ? $value['product_variant_id'] : NULL,
+                    'type' => $value['type'],
+                ];
 
-                    if ($value['type'] == "add") {
-                        if ($value['product_variant_id']) {
-                            $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                                ->where('warehouse_id', $order->warehouse_id)
-                                ->where('product_id', $value['product_id'])
-                                ->where('product_variant_id', $value['product_variant_id'])
-                                ->first();
+                if ($value['type'] == "add") {
+                    if ($value['product_variant_id']) {
+                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->where('product_id', $value['product_id'])
+                            ->where('product_variant_id', $value['product_variant_id'])
+                            ->first();
 
-                            if ($product_warehouse) {
-                                $product_warehouse->qte += $value['quantity'];
-                                $product_warehouse->save();
-                            }
-
-                        } else {
-                            $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                                ->where('warehouse_id', $order->warehouse_id)
-                                ->where('product_id', $value['product_id'])
-                                ->first();
-
-                            if ($product_warehouse) {
-                                $product_warehouse->qte += $value['quantity'];
-                                $product_warehouse->save();
-                            }
+                        if ($product_warehouse) {
+                            $product_warehouse->qte += $value['quantity'];
+                            $product_warehouse->save();
                         }
+
                     } else {
+                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->where('product_id', $value['product_id'])
+                            ->first();
 
-                        if ($value['product_variant_id']) {
-                            $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                                ->where('warehouse_id', $order->warehouse_id)
-                                ->where('product_id', $value['product_id'])
-                                ->where('product_variant_id', $value['product_variant_id'])
-                                ->first();
+                        if ($product_warehouse) {
+                            $product_warehouse->qte += $value['quantity'];
+                            $product_warehouse->save();
+                        }
+                    }
+                } else {
 
-                            if ($product_warehouse) {
-                                $product_warehouse->qte -= $value['quantity'];
-                                $product_warehouse->save();
-                            }
+                    if ($value['product_variant_id']) {
+                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->where('product_id', $value['product_id'])
+                            ->where('product_variant_id', $value['product_variant_id'])
+                            ->first();
 
-                        } else {
-                            $product_warehouse = product_warehouse::where('deleted_at', '=', null)
-                                ->where('warehouse_id', $order->warehouse_id)
-                                ->where('product_id', $value['product_id'])
-                                ->first();
+                        if ($product_warehouse) {
+                            $product_warehouse->qte -= $value['quantity'];
+                            $product_warehouse->save();
+                        }
 
-                            if ($product_warehouse) {
-                                $product_warehouse->qte -= $value['quantity'];
-                                $product_warehouse->save();
-                            }
+                    } else {
+                        $product_warehouse = product_warehouse::where('deleted_at', '=', null)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->where('product_id', $value['product_id'])
+                            ->first();
+
+                        if ($product_warehouse) {
+                            $product_warehouse->qte -= $value['quantity'];
+                            $product_warehouse->save();
                         }
                     }
                 }
-                AdjustmentDetail::insert($orderDetails);
-            }, 10);
 
-            return response()->json(['success' => true]);
-        }
-        return abort('403', __('You are not authorized'));
+                // ✅ Add LedgerService log call here (only addition to your code)
+                \App\Services\LedgerService::log(
+                    $value['product_id'],
+                    'adjustment',
+                    $order->Ref,
+                    $value['type'] === 'add' ? $value['quantity'] : 0,
+                    $value['type'] === 'sub' ? $value['quantity'] : 0
+                );
+            }
+
+            AdjustmentDetail::insert($orderDetails);
+        }, 10);
+
+        return response()->json(['success' => true]);
     }
+    return abort('403', __('You are not authorized'));
+}
 
      //------------ function show -----------\\
 

@@ -145,19 +145,29 @@ class PosController extends Controller
             $order->user_id = Auth::user()->id;
 
             $order->save();
+$client = Client::find($request->client_id);
 
             $data = $request['details'];
             foreach ($data as $key => $value) {
 
-                $unit = Unit::where('id', $value['sale_unit_id'])
-                    ->first();
+                $unit = Unit::where('id', $value['sale_unit_id'])->first();
+            
+                // Quantity conversion
+                $convertedQty = $value['quantity'];
+                if ($unit) {
+                    $convertedQty = $unit->operator == '/'
+                        ? $value['quantity'] / $unit->operator_value
+                        : $value['quantity'] * $unit->operator_value;
+                }
+            
                 $orderDetails[] = [
                     'date'               => $order->date,
                     'sale_id'            => $order->id,
-                    'sale_unit_id'       => $value['sale_unit_id']?$value['sale_unit_id']:NULL,
+                    'sale_unit_id' => !empty($value['sale_unit_id']) && Unit::find($value['sale_unit_id']) ? $value['sale_unit_id'] : NULL,
+
                     'quantity'           => $value['quantity'],
                     'product_id'         => $value['product_id'],
-                    'product_variant_id' => $value['product_variant_id']?$value['product_variant_id']:NULL,
+                    'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
                     'total'              => $value['subtotal'],
                     'price'              => $value['Unit_price'],
                     'TaxNet'             => $value['tax_percent'],
@@ -166,35 +176,36 @@ class PosController extends Controller
                     'discount_method'    => $value['discount_Method'],
                     'imei_number'        => $value['imei_number'],
                 ];
-
-                if ($value['product_variant_id']) {
+            
+                // Stock update
+                if (!empty($value['product_variant_id'])) {
                     $product_warehouse = product_warehouse::where('warehouse_id', $order->warehouse_id)
-                        ->where('product_id', $value['product_id'])->where('product_variant_id', $value['product_variant_id'])
+                        ->where('product_id', $value['product_id'])
+                        ->where('product_variant_id', $value['product_variant_id'])
                         ->first();
-
-                    if ($unit && $product_warehouse) {
-                        if ($unit->operator == '/') {
-                            $product_warehouse->qte -= $value['quantity'] / $unit->operator_value;
-                        } else {
-                            $product_warehouse->qte -= $value['quantity'] * $unit->operator_value;
-                        }
-                        $product_warehouse->save();
-                    }
-
                 } else {
                     $product_warehouse = product_warehouse::where('warehouse_id', $order->warehouse_id)
                         ->where('product_id', $value['product_id'])
                         ->first();
-                    if ($unit && $product_warehouse) {
-                        if ($unit->operator == '/') {
-                            $product_warehouse->qte -= $value['quantity'] / $unit->operator_value;
-                        } else {
-                            $product_warehouse->qte -= $value['quantity'] * $unit->operator_value;
-                        }
-                        $product_warehouse->save();
-                    }
                 }
+            
+                if ($unit && $product_warehouse) {
+                    $product_warehouse->qte -= $convertedQty;
+                    $product_warehouse->save();
+                }
+            
+         \App\Services\LedgerService::log(
+    $value['product_id'],
+    'pos',
+    $order->Ref,
+    0,
+    $convertedQty,
+       $client->username ?? 'POS Customer',
+    $value['code'] ?? null                             // product_code
+);
+
             }
+            
 
             SaleDetail::insert($orderDetails);
 
