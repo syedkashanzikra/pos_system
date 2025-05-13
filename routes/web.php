@@ -230,6 +230,9 @@ if ($installed === true) {
                  //------------------------------- clients --------------------------\\
         
                  Route::resource('people/clients', 'ClientController');
+                 Route::get('/clients/{id}/ledger/export', [App\Http\Controllers\ClientLedgerController::class, 'export'])
+    ->name('clients.ledger.export');
+
                  Route::post('get_clients_datatable', 'ClientController@get_clients_datatable')->name('clients_datatable');
 
                  Route::get('get_client_plafond/{id}', 'ClientController@get_client_plafond');

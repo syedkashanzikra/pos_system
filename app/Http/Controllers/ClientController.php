@@ -191,6 +191,12 @@ class ClientController extends Controller
                                 if ($user_auth->can('client_delete')){
                                     $item['action'] .=  '<a class="dropdown-item delete cursor-pointer" id="' .$client->id. '" > <i class="nav-icon i-Close-Window font-weight-bold mr-2"></i> ' .trans('translate.Delete_Customer').'</a>';
                                 }
+                                if ($user_auth->can('client_details')) {
+    $item['action'] .=  '<a class="dropdown-item" href="/clients/' .$client->id. '/ledger/export">
+        <i class="nav-icon i-File-Excel font-weight-bold mr-2"></i> Export Ledger
+    </a>';
+}
+
                                 $item['action'] .=  '</div>
                         </div>';
                     $data[] = $item;
@@ -529,6 +535,13 @@ class ClientController extends Controller
                             $payment_sale->user_id = Auth::user()->id;
                             $payment_sale->save();
 
+                            \App\Services\ClientLedgerService::log(
+    $request->client_id,
+    'sale_payment',
+    $payment_sale->Ref,
+    0,
+    $amount
+);
                             $account = Account::where('id', $request['account_id'])->exists();
 
                             if ($account) {
@@ -633,6 +646,15 @@ class ClientController extends Controller
                     $payment_sale_return->notes = $request['notes'];
                     $payment_sale_return->user_id = Auth::user()->id;
                     $payment_sale_return->save();
+
+                    \App\Services\ClientLedgerService::log(
+    $request->client_id,
+    'sale_return_payment',
+    $payment_sale_return->Ref,
+    $amount,   // debit: you're giving money to the client
+    0          // credit: nothing coming from client
+);
+
 
                     $account = Account::where('id', $request['account_id'])->exists();
 
