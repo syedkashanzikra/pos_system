@@ -337,58 +337,72 @@ class PurchasesController extends Controller
                 $order->user_id = Auth::user()->id;
 
                 $order->save();
-
+                
+                \App\Services\ProviderLedgerService::log(
+                    $request->supplier_id, // provider_id
+                    'purchase',            // type
+                    $order->Ref,           // ref
+                    $order->GrandTotal,    // debit (you owe money to supplier)
+                    0                      // credit
+                );
+                
                 $data = $request['details'];
                 foreach ($data as $key => $value) {
                     $unit = Unit::where('id', $value['purchase_unit_id'])->first();
+                
+                    // Convert quantity based on unit operator
+                    $convertedQty = $value['quantity'];
+                    if ($unit) {
+                        $convertedQty = $unit->operator == '/'
+                            ? $value['quantity'] / $unit->operator_value
+                            : $value['quantity'] * $unit->operator_value;
+                    }
+                
                     $orderDetails[] = [
-                        'date' => $request->date,
-                        'purchase_id' => $order->id,
-                        'quantity' => $value['quantity'],
-                        'cost' => $value['Unit_cost'],
-                        'purchase_unit_id' =>  $value['purchase_unit_id'],
-                        'TaxNet' => $value['tax_percent'],
-                        'tax_method' => $value['tax_method'],
-                        'discount' => $value['discount'],
-                        'discount_method' => $value['discount_Method'],
-                        'product_id' => $value['product_id'],
-                        'product_variant_id' => $value['product_variant_id']?$value['product_variant_id']:NULL,
-                        'total' => $value['subtotal'],
-                        'imei_number' => $value['imei_number'],
+                        'date'               => $request->date,
+                        'purchase_id'        => $order->id,
+                        'quantity'           => $value['quantity'],
+                        'cost'               => $value['Unit_cost'],
+                        'purchase_unit_id'   => $value['purchase_unit_id'],
+                        'TaxNet'             => $value['tax_percent'],
+                        'tax_method'         => $value['tax_method'],
+                        'discount'           => $value['discount'],
+                        'discount_method'    => $value['discount_Method'],
+                        'product_id'         => $value['product_id'],
+                        'product_variant_id' => !empty($value['product_variant_id']) ? $value['product_variant_id'] : NULL,
+                        'total'              => $value['subtotal'],
+                        'imei_number'        => $value['imei_number'],
                     ];
-
-                    if ($value['product_variant_id']) {
+                
+                    // Update stock
+                    if (!empty($value['product_variant_id'])) {
                         $product_warehouse = product_warehouse::where('deleted_at', '=', null)
                             ->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $value['product_id'])
                             ->where('product_variant_id', $value['product_variant_id'])
                             ->first();
-
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
-                            }
-                            $product_warehouse->save();
-                        }
-
                     } else {
                         $product_warehouse = product_warehouse::where('deleted_at', '=', null)
                             ->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $value['product_id'])
                             ->first();
-
-                        if ($unit && $product_warehouse) {
-                            if ($unit->operator == '/') {
-                                $product_warehouse->qte += $value['quantity'] / $unit->operator_value;
-                            } else {
-                                $product_warehouse->qte += $value['quantity'] * $unit->operator_value;
-                            }
-                            $product_warehouse->save();
-                        }
                     }
+                
+                    if ($unit && $product_warehouse) {
+                        $product_warehouse->qte += $convertedQty;
+                        $product_warehouse->save();
+                    }
+                
+                    // ✅ Ledger entry
+                    \App\Services\LedgerService::log(
+                        $value['product_id'],
+                        'purchase',
+                        $order->Ref,
+                        $convertedQty,
+                        0
+                    );
                 }
+                
                 PurchaseDetail::insert($orderDetails);
             }, 10);
 

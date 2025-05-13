@@ -445,6 +445,15 @@ class PurchasesReturnController extends Controller
 
                 }
                 PurchaseReturnDetails::insert($orderDetails);
+
+                
+    \App\Services\ProviderLedgerService::log(
+        $request->supplier_id,
+        'purchase_return',
+        $order->Ref,
+        0,                       
+        $order->GrandTotal        
+    );
             }, 10);
 
             return response()->json(['success' => true]);
