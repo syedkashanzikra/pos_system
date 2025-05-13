@@ -3,8 +3,18 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ProductLedgerController;
+// Route::get('/test-ledger-observer', function () {
+//     \App\Models\AdjustmentDetail::create([
+//         'adjustment_id' => 1,
+//         'product_id' => 1,
+//         'quantity' => 10,
+//         'type' => 'add',
+//     ]);
 
-
+//     return 'Detail created — check ledger!';
+// });
 
 
 $installed = Storage::disk('public')->exists('installed');
@@ -99,6 +109,8 @@ if ($installed === true) {
                     Route::get('print_labels', 'ProductsController@print_labels')->name('print_labels');
                     Route::get('import_products', 'ProductsController@import_products_page');
                     Route::post('import_products', 'ProductsController@import_products');
+                    Route::get('{productId}/ledger', [ProductLedgerController::class, 'index'])->name('product.ledger.index');
+                    Route::get('{productId}/ledger/download', [ProductLedgerController::class, 'downloadExcel'])->name('product.ledger.download');
 
                     //------------------------------- categories--------------------------\\
                     Route::resource('categories', 'CategoriesController');
