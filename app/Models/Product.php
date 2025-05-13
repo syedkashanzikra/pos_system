@@ -78,5 +78,9 @@ class Product extends Model
     {
         return $this->belongsTo(Brand::class);
     }
-
+    public function ledgers()
+    {
+        return $this->hasMany(ProductLedger::class);
+    }
+    
 }
