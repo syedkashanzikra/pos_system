@@ -233,6 +233,7 @@ Route::get('providers/{id}/ledger', [ProviderLedgerController::class, 'index'])-
                  //------------------------------- clients --------------------------\\
         
                  Route::resource('people/clients', 'ClientController');
+                 Route::get('/get_client_due/{id}', 'ClientController@getClientDue');
                  Route::get('/clients/{id}/ledger/export', [App\Http\Controllers\ClientLedgerController::class, 'export'])
     ->name('clients.ledger.export');
 

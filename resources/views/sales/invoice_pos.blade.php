@@ -17,6 +17,22 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
 
   <script src="{{asset('/assets/js/vue.js')}}"></script>
 
+  <style>
+    .balance-row {
+      font-weight: bold;
+    }
+    .previous-balance {
+      color: #dc3545;
+    }
+    .remaining-balance {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .balance-divider {
+      border-top: 1px dashed #ccc;
+      margin: 5px 0;
+    }
+  </style>
 </head>
 
 <body>
@@ -103,6 +119,24 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
                 @{{sale.due}}
               </td>
             </tr>
+
+            <tr class="balance-divider">
+              <td colspan="4"></td>
+            </tr>
+
+            <tr class="balance-row">
+              <td colspan="3" class="total previous-balance">{{ __('translate.Previous_Outstanding_Balance') }}</td>
+              <td class="total text-right previous-balance">
+                @{{previous_balance}}
+              </td>
+            </tr>
+
+            <tr class="balance-row">
+              <td colspan="3" class="total remaining-balance">{{ __('translate.Remaining_Outstanding_Balance') }}</td>
+              <td class="total text-right remaining-balance">
+                @{{remaining_balance}}
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -148,6 +182,7 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
             pos_settings:@json($pos_settings),
             sale: @json($sale),
             setting: @json($setting),
+            previous_balance: @json($previous_balance ?? 0),
          
         },
 
@@ -160,12 +195,12 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
         methods: {
 
           isPaid() {
-            return parseFloat(this.sale.paid_amount) > 0;
+            return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) > 0;
           },
 
           isPaidLessThanTotal() {
-          return parseFloat(this.sale.paid_amount) < parseFloat(this.sale.GrandTotal);
-        },
+            return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) < parseFloat(this.sale.GrandTotal.replace(/[^\d.-]/g, ''));
+          },
           
         //------------------------------Formetted Numbers -------------------------\\
         formatNumber(number, dec) {
@@ -196,11 +231,24 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
             setTimeout(() => {
               a.print();
             }, 1000);
-
-            
-
           },
         
+        },
+        computed: {
+          remaining_balance() {
+            // Extract numeric values from strings with currency symbols
+            const previousBalanceValue = parseFloat(this.previous_balance.toString().replace(/[^\d.-]/g, '')) || 0;
+            const currentDue = parseFloat(this.sale.due.toString().replace(/[^\d.-]/g, '')) || 0;
+            
+            // Get currency symbol from previous_balance
+            const currencySymbol = this.previous_balance.toString().replace(/[\d., ]/g, '');
+            
+            // Calculate the total remaining balance
+            const totalRemaining = previousBalanceValue + currentDue;
+            
+            // Format with the same currency symbol
+            return currencySymbol + this.formatNumber(totalRemaining, 2);
+          }
         },
         //-----------------------------Autoload function-------------------
         created() {

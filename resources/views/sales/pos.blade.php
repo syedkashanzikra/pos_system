@@ -96,7 +96,13 @@
 
                       </v-select>
                       <span class="error">@{{ errors[0] }}</span>
+                      <!-- Add this right after the customer v-select validation-provider div -->
+
                     </validation-provider>
+                    <div v-if="client_sell_due" class="mt-2 p-2 border rounded bg-light">
+  <strong>{{ __('translate.Outstanding_Balance') }}:</strong> 
+  <span class="text-danger font-weight-bold">@{{ client_sell_due }}</span>
+</div>
                   </div>
 
                   <!-- warehouse -->
@@ -379,7 +385,7 @@
                         <form @submit.prevent="Submit_Payment()">
                           <div class="row">
 
-                              <div class="col-md-6">
+                           <div class="col-md-6">
   <div class="form-group">
     <label for="current_date">{{ __('translate.Date') }}</label>
     <input 
@@ -656,6 +662,7 @@
             currentPage_cat: 1,
             perPage_cat: 4,
             pages_cat: 0,
+            client_sell_due: null,
             payment_methods:@json($payment_methods),
             accounts:@json($accounts),
 
@@ -744,12 +751,19 @@
               promo_percent:"",
             },
             sound: "/assets/audio/Beep.wav",
-            audio: new Audio("/assets/audio/Beep.wav")
+            audio: new Audio("/assets/audio/Beep.wav"),
+            client_balance: null,
         },
 
         mounted() {
           this.fetchCategories();
           this.fetchBrands();
+
+          if (this.warehouses && this.warehouses.length > 0) {
+    this.sale.warehouse_id = this.warehouses[0].id;
+    // Optionally trigger the Selected_Warehouse method if needed
+    this.Selected_Warehouse(this.warehouses[0].id);
+  }
         },
 
         methods: {
@@ -946,13 +960,34 @@
             return dirty || validated ? valid : null;
           },
        
-          Selected_Customer(value){
-            if (value === null) {
-              this.sale.client_id = "";
-             
-            }
+          Selected_Customer(value) {
+  if (value === null) {
+    this.sale.client_id = "";
+    this.client_balance = null;
+    this.client_sell_due = null;
+  } else {
+    this.sale.client_id = value;
+    this.Get_Client_Due(value);
+  }
+},
 
-          },
+Get_Client_Due(client_id) {
+  // Start the progress bar
+  NProgress.start();
+  NProgress.set(0.1);
+  
+  axios.get('/get_client_due/' + client_id)
+    .then(response => {
+      this.client_sell_due = response.data.sell_due;
+      // Complete the progress bar
+      setTimeout(() => NProgress.done(), 500);
+    })
+    .catch(error => {
+      // Complete the progress bar
+      setTimeout(() => NProgress.done(), 500);
+      console.log(error);
+    });
+},
          
           //---------------------- Event Select Warehouse ------------------------------\\
           Selected_Warehouse(value) {
