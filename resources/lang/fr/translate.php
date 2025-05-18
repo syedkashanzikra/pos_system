@@ -10,7 +10,7 @@ return [
     'This_Month' => 'Ce mois-ci',
     'Last_Month' => 'Le mois dernier',
     'Ref_of_cheque' => 'Réf du chèque',
-
+ 'Outstanding_Balance' => 'Solde impayé',
     'Top_Clients' => 'Meilleurs clients',
     'Monthly_purchase' => 'Achat mensuel',
     'monthly_sales' => 'Ventes mensuelles',
@@ -28,7 +28,8 @@ return [
     'Qty_purchased' => 'Qté achetée',
     'Amount_purchased' => 'Montant acheté',
     'Month' => 'Mois',
-
+'Previous_Outstanding_Balance' => 'Solde impayé précédent',
+'Remaining_Outstanding_Balance' => 'Solde impayé restant',
     'Time_Zone' => 'Fuseau Horaire',
     'Inventory' => 'Inventaire',
     'Products' => 'Produits',
