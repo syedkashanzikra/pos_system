@@ -1,5 +1,4 @@
 <?php
-
 $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
 ?>
 
@@ -9,257 +8,413 @@ $languageDirection = $_COOKIE['language'] == 'ar' ? 'rtl' : 'ltr';
 <head>
   <meta charset="UTF-8">
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">
-  <title></title>
+  <title>Invoice</title>
   <link rel=icon href={{ asset('images/logo.svg') }}>
 
   <!-- CSS Files -->
   <link rel="stylesheet" href="{{asset('assets/styles/vendor/invoice_pos.css')}}">
-
   <script src="{{asset('/assets/js/vue.js')}}"></script>
 
   <style>
-    .balance-row {
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+    }
+    
+    #invoice-POS {
+      width: 80mm;
+      margin: 0 auto;
+      padding: 5px;
+      background: #FFF;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #invoice-POS::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('{{ asset('images/watermark.jpg') }}');
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 80%;
+      opacity: 0.1;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Make sure all content is above the watermark */
+    #invoice-POS > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .logo-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      border-bottom: 1px dotted #9cf;
+      padding-bottom: 5px;
+    }
+    
+    .logo-box {
+      border: 1px solid #999;
+      border-radius: 5px;
+      padding: 2px 10px;
+      font-style: italic;
       font-weight: bold;
+      font-size: 14px;
     }
-    .previous-balance {
-      color: #dc3545;
-    }
-    .remaining-balance {
-      color: #dc3545;
+    
+    .company-name {
+      text-align: center;
       font-weight: bold;
-    }
-    .balance-divider {
-      border-top: 1px dashed #ccc;
+      font-size: 16px;
       margin: 5px 0;
+    }
+    
+    .company-phone {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .invoice-table th, .invoice-table td {
+      border: 1px solid #999;
+      padding: 5px;
+    }
+    
+    .invoice-table th {
+      background-color: #f9f9f9;
+    }
+    
+    .qty-col {
+      width: 15%;
+    }
+    
+    .details-col {
+      width: 50%;
+    }
+    
+    .rate-col, .amount-col {
+      width: 17.5%;
+    }
+    
+    .summary-table {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .summary-table td {
+      padding: 3px 0;
+    }
+    
+    .summary-label {
+      text-align: right;
+      padding-right: 10px;
+    }
+    
+    .summary-value {
+      border-bottom: 1px solid #999;
+    }
+    
+    .signature-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .signature-box {
+      width: 45%;
+    }
+    
+    .signature-line {
+      border-top: 1px solid #999;
+      margin-top: 20px;
+      padding-top: 5px;
+    }
+    
+    .footer-note {
+      border-top: 1px solid #999;
+      margin-top: 10px;
+      padding-top: 5px;
+      text-align: center;
+      font-size: 10px;
+    }
+    
+    .hidden-print {
+      margin-bottom: 20px;
+    }
+    
+    @media print {
+      .hidden-print {
+        display: none;
+      }
+      
+      #invoice-POS {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      #invoice-POS::before {
+        opacity: 0.1;
+      }
     }
   </style>
 </head>
 
 <body>
-
   <div id="in_pos">
     <div class="hidden-print">
-    <a @click="print_pos()" class="btn btn-primary"> {{ __('translate.print') }}</a>
+      <a @click="print_pos()" class="btn btn-primary">{{ __('translate.print') }}</a>
       <br>
     </div>
+    
     <div id="invoice-POS">
-      <div>
-        <div class="info">
-          <h2 class="text-center">@{{setting.CompanyName}}</h2>
-
-          <p dir="{{ $languageDirection }}"> 
-            <span>{{ __('translate.date') }} : @{{sale.date}} <br></span>
-            <span>{{ __('translate.Sale') }}: @{{sale.Ref}} <br></span>
-            <span v-show="pos_settings.show_address">{{ __('translate.Address') }} : @{{setting.CompanyAdress}}
-              <br></span>
-            <span v-show="pos_settings.show_email">{{ __('translate.Email') }} : @{{setting.email}} <br></span>
-            <span v-show="pos_settings.show_phone">{{ __('translate.Phone') }} : @{{setting.CompanyPhone}}
-              <br></span>
-            <span v-show="pos_settings.show_customer">{{ __('translate.Customer') }} : @{{sale.client_name}}
-              <br></span>
-              <span v-show="pos_settings.show_Warehouse">{{ __('translate.warehouse') }} : @{{sale.warehouse_name}}
-              <br></span>
-          </p>
+      <!-- Logo Section -->
+      <div class="logo-container">
+        <div class="logo-box">Master</div>
+        <div class="logo-box">Gold</div>
+        <div class="logo-box">Prime</div>
+      </div>
+      
+      <!-- Company Info -->
+      <div class="company-name">@{{setting.CompanyName}}</div>
+      <div class="company-phone">Phone: @{{setting.CompanyPhone}}</div>
+      
+      <!-- Invoice Header -->
+      <div class="invoice-header">
+        <div>Bill # @{{sale.Ref}}</div>
+        <div>Date: @{{sale.date}}</div>
+      </div>
+      
+      <div class="customer-info">
+        <div>M/s: @{{sale.client_name}}</div>
+      </div>
+      
+      <!-- Invoice Table -->
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th class="qty-col">Qty.</th>
+            <th class="details-col">Details</th>
+            <th class="rate-col">Rate</th>
+            <th class="amount-col">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="detail_invoice in details">
+            <td>@{{formatNumber(detail_invoice.quantity,2)}}</td>
+            <td>
+              @{{detail_invoice.name}}
+              <span v-show="detail_invoice.is_imei && detail_invoice.imei_number !==null">
+                <br>IMEI_SN: @{{detail_invoice.imei_number}}
+              </span>
+            </td>
+            <td>@{{detail_invoice.price}}</td>
+            <td>@{{detail_invoice.total}}</td>
+          </tr>
+          <!-- Empty rows to match the receipt design -->
+          <tr v-for="n in (10 - details.length)" v-if="details.length < 10">
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="summary-label">Total</td>
+            <td>@{{sale.GrandTotal}}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <!-- Summary Section -->
+      <table class="summary-table">
+        <tr>
+          <td colspan="2" class="summary-label">Previous Bal.:</td>
+          <td class="summary-value">@{{previous_balance}}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="summary-label">Total Due:</td>
+          <td class="summary-value">@{{remaining_balance}}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="summary-label">Discount:</td>
+          <td class="summary-value">@{{sale.discount}}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="summary-label">Net. Due:</td>
+          <td class="summary-value">@{{sale.GrandTotal}}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="summary-label">Amount Received:</td>
+          <td class="summary-value">@{{sale.paid_amount}}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="summary-label">Balance Due:</td>
+          <td class="summary-value">@{{sale.due}}</td>
+        </tr>
+      </table>
+      
+      <!-- Signature Section -->
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-line">Sign.</div>
         </div>
-
-        <table class="detail_invoice">
-          <tbody>
-            <tr v-for="detail_invoice in details">
-              <td colspan="3">
-                @{{detail_invoice.name}}
-                <br v-show="detail_invoice.is_imei && detail_invoice.imei_number !==null">
-                <span v-show="detail_invoice.is_imei && detail_invoice.imei_number !==null ">IMEI_SN :
-                  @{{detail_invoice.imei_number}}</span>
-                <br>
-                <span>@{{formatNumber(detail_invoice.quantity,2)}} @{{detail_invoice.unit_sale}} x
-                  @{{detail_invoice.price}}</span>
-              </td>
-              <td class="product_detail_invoice">
-                @{{detail_invoice.total}}
-              </td>
-            </tr>
-
-            <tr class="mt-10" v-show="pos_settings.show_discount">
-              <td colspan="3" class="total">{{ __('translate.Tax') }}</td>
-              <td class="total text-right">
-                @{{sale.taxe}} (@{{formatNumber(sale.tax_rate,2)}} %)
-              </td>
-            </tr>
-
-            {{-- Discount --}}
-            <tr class="mt-10" v-show="pos_settings.show_discount">
-              <td colspan="3" class="total">{{ __('translate.Discount') }}</td>
-              <td class="total text-right">
-                <span>@{{sale.discount}}</span>
-              </td>
-          
-            </tr>
-
-            <tr class="mt-10" v-show="pos_settings.show_discount">
-              <td colspan="3" class="total">{{ __('translate.Shipping') }}</td>
-              <td class="total text-right">
-                @{{sale.shipping}}</td>
-            </tr>
-
-            <tr class="mt-10">
-              <td colspan="3" class="total">{{ __('translate.Total') }}</td>
-              <td  class="total text-right">
-                @{{sale.GrandTotal}}</td>
-            </tr>
-
-            <tr v-show="isPaid">
-              <td colspan="3" class="total">{{ __('translate.Paid') }}</td>
-              <td class="total text-right">
-                 @{{sale.paid_amount}}</td>
-            </tr>
-
-            <tr v-show="isPaidLessThanTotal">
-              <td colspan="3" class="total">{{ __('translate.Due') }}</td>
-              <td class="total text-right">
-                @{{sale.due}}
-              </td>
-            </tr>
-
-            <tr class="balance-divider">
-              <td colspan="4"></td>
-            </tr>
-
-            <tr class="balance-row">
-              <td colspan="3" class="total previous-balance">{{ __('translate.Previous_Outstanding_Balance') }}</td>
-              <td class="total text-right previous-balance">
-                @{{previous_balance}}
-              </td>
-            </tr>
-
-            <tr class="balance-row">
-              <td colspan="3" class="total remaining-balance">{{ __('translate.Remaining_Outstanding_Balance') }}</td>
-              <td class="total text-right remaining-balance">
-                @{{remaining_balance}}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table class="change mt-3" v-show="isPaid">
-          <thead>
-            <tr>
-              <th class="text-left" colspan="1">{{ __('translate.Paid_by') }}:</th>
-              <th class="text-right" colspan="2">{{ __('translate.Amount') }}:</th>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="payment_pos in payments">
-              <td class="text-left" colspan="1">@{{payment_pos.Reglement}}</td>
-              <td class="text-right" colspan="2">@{{payment_pos.montant}}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div id="legalcopy" class="ms-2"  v-show="pos_settings.show_note">
-          <p class="legal">
-            <strong>{{ __('translate.Thank_You_For_Shopping_With_Us_Please_Come_Again') }}</strong>
-          </p>
+        <div class="signature-box">
+          <div class="signature-line">Customer Sign.</div>
         </div>
-
+      </div>
+      
+      <!-- Footer Note -->
+      <div class="footer-note" v-show="pos_settings.show_note">
+        <p>{{ __('translate.Thank_You_For_Shopping_With_Us_Please_Come_Again') }}</p>
       </div>
     </div>
   </div>
 
   <script src="{{asset('/assets/js/jquery.min.js')}}"></script>
 
-
   <script>
     var app = new Vue({
-        el: '#in_pos',
-
-        data: {
-           
-            payments: @json($payments),
-            details: @json($details),
-            pos_settings:@json($pos_settings),
-            sale: @json($sale),
-            setting: @json($setting),
-            previous_balance: @json($previous_balance ?? 0),
-         
-        },
-
-        mounted() {
-            if (this.pos_settings.is_printable) {
-                this.print_pos();
-            }
-        },
-
-        methods: {
-
-          isPaid() {
-            return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) > 0;
-          },
-
-          isPaidLessThanTotal() {
-            return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) < parseFloat(this.sale.GrandTotal.replace(/[^\d.-]/g, ''));
-          },
-          
-        //------------------------------Formetted Numbers -------------------------\\
-        formatNumber(number, dec) {
-            const value = (typeof number === "string"
-              ? number
-              : number.toString()
-            ).split(".");
-            if (dec <= 0) return value[0];
-            let formated = value[1] || "";
-            if (formated.length > dec)
-              return `${value[0]}.${formated.substr(0, dec)}`;
-            while (formated.length < dec) formated += "0";
-            return `${value[0]}.${formated}`;
-          },
-
-          //------------------------------ Print -------------------------\\
-          print_pos() {
-            var divContents = document.getElementById("invoice-POS").innerHTML;
-            var a = window.open("", "", "height=500, width=500");
-            a.document.write(
-              '<link rel="stylesheet"  href="/assets/styles/vendor/pos_print.css"><html>'
-            );
-            a.document.write("<body>");
-            a.document.write(divContents);
-            a.document.write("</body></html>");
-            a.document.close();
-
-            setTimeout(() => {
-              a.print();
-            }, 1000);
-          },
-        
-        },
-        computed: {
-          remaining_balance() {
-            // Extract numeric values from strings with currency symbols
-            const previousBalanceValue = parseFloat(this.previous_balance.toString().replace(/[^\d.-]/g, '')) || 0;
-            const currentDue = parseFloat(this.sale.due.toString().replace(/[^\d.-]/g, '')) || 0;
-            
-            // Get currency symbol from previous_balance
-            const currencySymbol = this.previous_balance.toString().replace(/[\d., ]/g, '');
-            
-            // Calculate the total remaining balance
-            const totalRemaining = previousBalanceValue + currentDue;
-            
-            // Format with the same currency symbol
-            return currencySymbol + this.formatNumber(totalRemaining, 2);
-          }
-        },
-        //-----------------------------Autoload function-------------------
-        created() {
-
+      el: '#in_pos',
+      
+      data: {
+        payments: @json($payments),
+        details: @json($details),
+        pos_settings: @json($pos_settings),
+        sale: @json($sale),
+        setting: @json($setting),
+        previous_balance: @json($previous_balance ?? 0),
+      },
+      
+      mounted() {
+        if (this.pos_settings.is_printable) {
+          this.print_pos();
         }
-
-      })
-  
+      },
+      
+      methods: {
+        isPaid() {
+          return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) > 0;
+        },
+        
+        isPaidLessThanTotal() {
+          return parseFloat(this.sale.paid_amount.replace(/[^\d.-]/g, '')) < parseFloat(this.sale.GrandTotal.replace(/[^\d.-]/g, ''));
+        },
+        
+        formatNumber(number, dec) {
+          const value = (typeof number === "string" ? number : number.toString()).split(".");
+          if (dec <= 0) return value[0];
+          let formated = value[1] || "";
+          if (formated.length > dec)
+            return `${value[0]}.${formated.substr(0, dec)}`;
+          while (formated.length < dec) formated += "0";
+          return `${value[0]}.${formated}`;
+        },
+        
+        print_pos() {
+          // Get all styles from the current page
+          var styles = '';
+          for (var i = 0; i < document.styleSheets.length; i++) {
+            var sheet = document.styleSheets[i];
+            try {
+              var rules = sheet.cssRules || sheet.rules;
+              if (rules) {
+                for (var j = 0; j < rules.length; j++) {
+                  styles += rules[j].cssText + '\n';
+                }
+              }
+            } catch (e) {
+              // Skip cross-domain stylesheets
+              console.log("Could not access stylesheet", e);
+            }
+          }
+          
+          // Get the invoice content
+          var divContents = document.getElementById("invoice-POS").outerHTML;
+          
+          // Create a new window with all styles and content
+          var printWindow = window.open('', '', 'height=600,width=800');
+          printWindow.document.write('<html><head><title>Print Invoice</title>');
+          printWindow.document.write('<style type="text/css">');
+          printWindow.document.write(styles);
+          printWindow.document.write(`
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              #invoice-POS {
+                width: 80mm;
+                margin: 0 auto;
+                padding: 5px;
+                background: #FFF;
+                position: relative;
+                overflow: hidden;
+              }
+              #invoice-POS::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-image: url('{{ asset('images/watermark.jpg') }}');
+                background-position: center;
+                background-repeat: no-repeat;
+                background-size: 80%;
+                opacity: 0.1;
+                z-index: 0;
+                pointer-events: none;
+              }
+              #invoice-POS > * {
+                position: relative;
+                z-index: 1;
+              }
+            }
+          `);
+          printWindow.document.write('</style></head><body>');
+          printWindow.document.write(divContents);
+          printWindow.document.write('</body></html>');
+          printWindow.document.close();
+          
+          // Wait for everything to load before printing
+          setTimeout(function() {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+          }, 1000);
+        }
+      },
+      
+      computed: {
+        remaining_balance() {
+          const previousBalanceValue = parseFloat(this.previous_balance.toString().replace(/[^\d.-]/g, '')) || 0;
+          const currentDue = parseFloat(this.sale.due.toString().replace(/[^\d.-]/g, '')) || 0;
+          const currencySymbol = this.previous_balance.toString().replace(/[\d., ]/g, '');
+          const totalRemaining = previousBalanceValue + currentDue;
+          return currencySymbol + this.formatNumber(totalRemaining, 2);
+        }
+      },
+    });
   </script>
-
-
 </body>
-
 </html>
