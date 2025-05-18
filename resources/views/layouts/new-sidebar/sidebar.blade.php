@@ -187,14 +187,14 @@
                                     ])
                                 </li>
                             @endcan
-                            @can('warehouse')
+                            {{-- @can('warehouse')
                                 <li>
                                     @include('components.sidebar.child-navitem', [
                                         'href'=>'/products/warehouses', 
                                         'title'=> __('translate.Warehouses')
                                     ])
                                 </li>
-                            @endcan
+                            @endcan --}}
                         </ul>
                     </div>
                 </li>
@@ -242,7 +242,7 @@
             @endif
 
             {{-- Stock Transfer --}}
-            @if (auth()->user()->can('transfer_view_all') || auth()->user()->can('transfer_view_own') || auth()->user()->can('transfer_add'))
+            {{-- @if (auth()->user()->can('transfer_view_all') || auth()->user()->can('transfer_view_own') || auth()->user()->can('transfer_add'))
                 <li>
                     <div 
                         @click="selectCollapse('transfer')"
@@ -279,7 +279,7 @@
                         </ul>
                     </div>
                 </li>
-            @endif
+            @endif --}}
 
             {{-- Quotations --}}
             {{-- @if (auth()->user()->can('quotations_view_all')  || auth()->user()->can('quotations_view_own') || auth()->user()->can('quotations_add'))

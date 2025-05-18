@@ -42,9 +42,9 @@
                   <th>{{ __('translate.Created_by') }}</th>
                   <th>{{ __('translate.Customer') }}</th>
                   <th>{{ __('translate.warehouse') }}</th>
-                  <th>{{ __('translate.Total') }}</th>
+                  {{-- <th>{{ __('translate.Total') }}</th>
                   <th>{{ __('translate.Paid') }}</th>
-                  <th>{{ __('translate.Due') }}</th>
+                  <th>{{ __('translate.Due') }}</th> --}}
                   <th>{{ __('translate.Payment_Status') }}</th>
                 </tr>
               </thead>
@@ -378,7 +378,8 @@
                             'searchable': false,
                         },
                         {
-                            'targets': [1,4,5,6,7,8,9,10],
+                            // 'targets': [1,4,5,6,7,8,9,10],
+                            'targets': [1,4,5,6,7],
                             "orderable": false,
                         },
                   ],
@@ -404,9 +405,9 @@
                     {data: 'created_by'},
                     {data: 'client_name'},
                     {data: 'warehouse_name'},
-                    {data: 'GrandTotal'},
-                    {data: 'paid_amount'},
-                    {data: 'due'},
+                    // {data: 'GrandTotal'},
+                    // {data: 'paid_amount'},
+                    // {data: 'due'},
                     {data: 'payment_status'},
                 
                 ],
