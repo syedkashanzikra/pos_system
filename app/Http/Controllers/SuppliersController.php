@@ -149,7 +149,12 @@ class SuppliersController extends Controller
                                  if ($user_auth->can('supplier_details')){
                                     $item['action'] .=  ' <a class="dropdown-item" href="/people/suppliers/' .$provider->id.'"> <i class="nav-icon  i-Eye font-weight-bold mr-2"></i> ' .trans('translate.Provider_details').'</a>';
                                 }
-
+                             
+if ($user_auth->can('supplier_details')) {
+    $item['action'] .= '<a class="dropdown-item" href="' . route('provider.ledger.export', $provider->id) . '">
+        <i class="nav-icon i-Download font-weight-bold mr-2"></i> Export Ledger
+    </a>';
+                            }
                                 //check if user has permission "suppliers_edit"
                                 if ($user_auth->can('suppliers_edit')){
                                     $item['action'] .=  '<a class="dropdown-item edit cursor-pointer" id="' .$provider->id. '"><i class="nav-icon i-Edit font-weight-bold mr-2"></i> ' .trans('translate.Edit_Provider').'</a>';

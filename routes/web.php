@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProductLedgerController;
+use App\Http\Controllers\ProviderLedgerController;
 // Route::get('/test-ledger-observer', function () {
 //     \App\Models\AdjustmentDetail::create([
 //         'adjustment_id' => 1,
@@ -223,6 +224,8 @@ if ($installed === true) {
                  Route::post("suppliers/delete/by_selection", "SuppliersController@delete_by_selection");
                  Route::get('get_provider_debt_total/{id}', 'SuppliersController@get_provider_debt_total');
                  Route::post('providers_pay_due', 'SuppliersController@providers_pay_due');
+Route::get('providers/{id}/ledger/export', [ProviderLedgerController::class, 'export'])->name('provider.ledger.export');
+Route::get('providers/{id}/ledger', [ProviderLedgerController::class, 'index'])->name('provider.ledger.index'); // optional
 
                  Route::get('get_provider_debt_return_total/{id}', 'SuppliersController@get_provider_debt_return_total');
                  Route::post('providers_pay_return_due', 'SuppliersController@providers_pay_return_due');
