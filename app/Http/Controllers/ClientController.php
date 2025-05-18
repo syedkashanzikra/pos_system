@@ -821,4 +821,28 @@ class ClientController extends Controller
         }
     }
 
+
+
+    public function getClientDue($id)
+{
+    $client = Client::findOrFail($id);
+    
+    // Calculate outstanding balance
+    $total_amount = DB::table('sales')
+        ->where('deleted_at', '=', null)
+        ->where('client_id', $client->id)
+        ->sum('GrandTotal');
+
+    $total_paid = DB::table('sales')
+        ->where('sales.deleted_at', '=', null)
+        ->where('sales.client_id', $client->id)
+        ->sum('paid_amount');
+
+    $sell_due = $total_amount - $total_paid;
+    
+    return response()->json([
+        'sell_due' => $this->render_price_with_symbol_placement(number_format($sell_due, 2, '.', ',')),
+    ]);
+}
+
 }

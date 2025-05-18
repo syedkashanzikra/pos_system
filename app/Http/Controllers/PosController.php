@@ -96,6 +96,7 @@ class PosController extends Controller
             $data = [];
             $product_autocomplete = [];
 
+            
            
             return view('sales.pos',[
                 'clients'            => $clients,
@@ -518,95 +519,118 @@ $client = Client::find($request->client_id);
 
      //-------------- Print Invoice ---------------\\
 
-     public function Print_Invoice_POS(Request $request, $id)
-     {
-        $user_auth = auth()->user();
+public function Print_Invoice_POS(Request $request, $id)
+{
+    $user_auth = auth()->user();
 
-        if ($user_auth->can('pos')){
+    if ($user_auth->can('pos')){
 
-            $details = array();
-    
-            $sale = Sale::with('details.product.unitSale')
-                ->where('deleted_at', '=', null)
-                ->findOrFail($id);
-    
-            $item['id']                     = $sale->id;
-            $item['Ref']                    = $sale->Ref;
-            $item['date']                   = Carbon::parse($sale->date)->format('d-m-Y H:i');
+        $details = array();
 
-            if($sale->discount_type == 'fixed'){
-                $item['discount']           = $this->render_price_with_symbol_placement(number_format($sale->discount, 2, '.', ','));
-            }else{
-                $item['discount']           = $this->render_price_with_symbol_placement(number_format($sale->discount_percent_total, 2, '.', ',')) .'('.$sale->discount .' '.'%)';
-            }
+        $sale = Sale::with('details.product.unitSale')
+            ->where('deleted_at', '=', null)
+            ->findOrFail($id);
 
-            $item['shipping']               = $this->render_price_with_symbol_placement(number_format($sale->shipping, 2, '.', ','));
-            $item['taxe']                   = $this->render_price_with_symbol_placement(number_format($sale->TaxNet, 2, '.', ','));
-            $item['tax_rate']               = $sale->tax_rate;
-            $item['client_name']            = $sale['client']->username;
-            $item['warehouse_name']         = $sale['warehouse']->name;
-            $item['GrandTotal']             = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal, 2, '.', ','));
-            $item['paid_amount']            = $this->render_price_with_symbol_placement(number_format($sale->paid_amount, 2, '.', ','));
-            $item['due']                    = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal - $sale->paid_amount, 2, '.', ','));
-            foreach ($sale['details'] as $detail) {
-    
-                $unit = Unit::where('id', $detail->sale_unit_id)->first();
-                if ($detail->product_variant_id) {
-    
-                    $productsVariants = ProductVariant::where('product_id', $detail->product_id)
-                        ->where('id', $detail->product_variant_id)->first();
-    
-                        $data['code'] = $productsVariants->code;
-                        $data['name'] = '['.$productsVariants->name . '] ' . $detail['product']['name'];
-                        
-                    } else {
-                        $data['code'] = $detail['product']['code'];
-                        $data['name'] = $detail['product']['name'];
-                    }
-                    
-                $data['price'] = $this->render_price_with_symbol_placement(number_format($detail->price, 2, '.', ','));
-                $data['total'] = $this->render_price_with_symbol_placement(number_format($detail->total, 2, '.', ','));
-                $data['quantity'] = $detail->quantity;
-                $data['unit_sale'] = $unit?$unit->ShortName:'';
-    
-                $data['is_imei'] = $detail['product']['is_imei'];
-                $data['imei_number'] = $detail->imei_number;
-    
-                $details[] = $data;
-            }
-    
-            $payments = PaymentSale::with('sale','payment_method')
-                ->where('sale_id', $id)
-                ->orderBy('id', 'DESC')
-                ->get();
+        $item['id']                     = $sale->id;
+        $item['Ref']                    = $sale->Ref;
+        $item['date']                   = Carbon::parse($sale->date)->format('d-m-Y H:i');
+        $item['client_id']              = $sale->client_id;
 
-            $payments_details = [];
-            foreach ($payments as $payment) {
-
-                $payment_data['Reglement'] = $payment->payment_method->title;
-                $payment_data['montant']   = $this->render_price_with_symbol_placement(number_format($payment->montant, 2, '.', ','));
-
-                $payments_details[] = $payment_data;
-            }
-    
-            $settings = Setting::where('deleted_at', '=', null)->first();
-            $pos_settings = PosSetting::where('deleted_at', '=', null)->first();
-    
-            return view('sales.invoice_pos',
-                    [
-                        'payments' => $payments_details,
-                        'setting' => $settings,
-                        'pos_settings' => $pos_settings,
-                        'sale' => $item,
-                        'details' => $details,
-                    ]
-                );
-
+        if($sale->discount_type == 'fixed'){
+            $item['discount']           = $this->render_price_with_symbol_placement(number_format($sale->discount, 2, '.', ','));
+        }else{
+            $item['discount']           = $this->render_price_with_symbol_placement(number_format($sale->discount_percent_total, 2, '.', ',')) .'('.$sale->discount .' '.'%)';
         }
-        return abort('403', __('You are not authorized'));
- 
-     }
- 
+
+        $item['shipping']               = $this->render_price_with_symbol_placement(number_format($sale->shipping, 2, '.', ','));
+        $item['taxe']                   = $this->render_price_with_symbol_placement(number_format($sale->TaxNet, 2, '.', ','));
+        $item['tax_rate']               = $sale->tax_rate;
+        $item['client_name']            = $sale['client']->username;
+        $item['warehouse_name']         = $sale['warehouse']->name;
+        $item['GrandTotal']             = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal, 2, '.', ','));
+        $item['paid_amount']            = $this->render_price_with_symbol_placement(number_format($sale->paid_amount, 2, '.', ','));
+        $item['due']                    = $this->render_price_with_symbol_placement(number_format($sale->GrandTotal - $sale->paid_amount, 2, '.', ','));
+        
+        foreach ($sale['details'] as $detail) {
+
+            $unit = Unit::where('id', $detail->sale_unit_id)->first();
+            if ($detail->product_variant_id) {
+
+                $productsVariants = ProductVariant::where('product_id', $detail->product_id)
+                    ->where('id', $detail->product_variant_id)->first();
+
+                    $data['code'] = $productsVariants->code;
+                    $data['name'] = '['.$productsVariants->name . '] ' . $detail['product']['name'];
+                    
+                } else {
+                    $data['code'] = $detail['product']['code'];
+                    $data['name'] = $detail['product']['name'];
+                }
+                
+            $data['price'] = $this->render_price_with_symbol_placement(number_format($detail->price, 2, '.', ','));
+            $data['total'] = $this->render_price_with_symbol_placement(number_format($detail->total, 2, '.', ','));
+            $data['quantity'] = $detail->quantity;
+            $data['unit_sale'] = $unit?$unit->ShortName:'';
+
+            $data['is_imei'] = $detail['product']['is_imei'];
+            $data['imei_number'] = $detail->imei_number;
+
+            $details[] = $data;
+        }
+
+        $payments = PaymentSale::with('sale','payment_method')
+            ->where('sale_id', $id)
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        $payments_details = [];
+        foreach ($payments as $payment) {
+
+            $payment_data['Reglement'] = $payment->payment_method->title;
+            $payment_data['montant']   = $this->render_price_with_symbol_placement(number_format($payment->montant, 2, '.', ','));
+
+            $payments_details[] = $payment_data;
+        }
+
+        // Calculate previous outstanding balance (before this transaction)
+        $client_id = $sale->client_id;
+        
+        $total_amount = DB::table('sales')
+            ->where('deleted_at', '=', null)
+            ->where('client_id', $client_id)
+            ->where('id', '!=', $id) // Exclude current sale
+            ->sum('GrandTotal');
+
+        $total_paid = DB::table('sales')
+            ->where('sales.deleted_at', '=', null)
+            ->where('sales.client_id', $client_id)
+            ->where('id', '!=', $id) // Exclude current sale
+            ->sum('paid_amount');
+
+        $previous_balance = $total_amount - $total_paid;
+        
+        // Format the previous balance with currency symbol
+        $previous_balance_formatted = $this->render_price_with_symbol_placement(
+            number_format($previous_balance, 2, '.', ',')
+        );
+
+        $settings = Setting::where('deleted_at', '=', null)->first();
+        $pos_settings = PosSetting::where('deleted_at', '=', null)->first();
+
+        return view('sales.invoice_pos',
+                [
+                    'payments' => $payments_details,
+                    'setting' => $settings,
+                    'pos_settings' => $pos_settings,
+                    'sale' => $item,
+                    'details' => $details,
+                    'previous_balance' => $previous_balance_formatted,
+                ]
+            );
+
+    }
+    return abort('403', __('You are not authorized'));
+}
 
 
     // render_price_with_symbol_placement
