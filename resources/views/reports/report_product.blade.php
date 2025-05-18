@@ -13,6 +13,34 @@
 <div class="separator-breadcrumb border-top"></div>
 
 <div id="product_report">
+    <!-- Summary Cards -->
+    <div class="row mb-3" id="report_totals_row">
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('translate.Total_Products') }}</h6>
+                <h5 class="mb-0 text-dark fw-bold">{{ $totalProducts }}</h5>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('Total_Quantity') }}</h6>
+                <h5 class="mb-0 text-success fw-bold">{{ number_format($totalQuantity, 2) }}</h5>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light p-3">
+                <h6 class="mb-1">{{ __('Total_Value_At_Cost') }}</h6>
+                <h5 class="mb-0 text-danger fw-bold">
+                    @if($symbol_placement == 'before')
+                        {{$currency}} {{ number_format($totalValueAtCost, 2) }}
+                    @else
+                        {{ number_format($totalValueAtCost, 2) }} {{$currency}}
+                    @endif
+                </h5>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <div class="form-group col-md-6">
             <label for="warehouse_id">{{ __('translate.warehouse') }}
@@ -44,6 +72,7 @@
                                     <th>{{ __('translate.Product_Type') }}</th>
                                     <th>{{ __('translate.Category') }}</th>
                                     <th>{{ __('translate.warehouse') }}</th>
+                                    <th>{{ __('translate.Current_Stock') }}</th>
                                     <th>{{ __('translate.Qty_sold') }}</th>
                                     <th>{{ __('translate.Amount_Sold') }}</th>
                                     <th>{{ __('translate.Qty_purchased') }}</th>
@@ -55,6 +84,7 @@
                             <tfoot>
                                     <tr>
                                         <th>{{ __('translate.Total') }} :</th>
+                                        <th></th>
                                         <th></th>
                                         <th></th>
                                         <th></th>
@@ -135,7 +165,7 @@
                     'columnDefs': [
                   {
                       "orderable": false,
-                      'targets': [2,3,4,5,6,7,8]
+                      'targets': [2,3,4,5,6,7,8,9]
                   },
                 ],
 
@@ -157,6 +187,7 @@
                         {data: 'type'},
                         {data: 'category'},
                         {data: 'warehouse_name'},
+                        {data: 'current_stock'},
                         {data: 'sold_qty'},
                         {data: 'sold_amount'},
                         {data: 'purchased_qty'},
@@ -171,21 +202,25 @@
                             return typeof i === 'string' ? i.replace(/[\$, ]/g, '') * 1 : typeof i === 'number' ? i : 0;
                         };
             
-
-                        var sold_qty = api.column(5, { page: 'current' }).data().reduce(function (a, b) {
+                        var current_stock = api.column(5, { page: 'current' }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
 
-                        var sold_amount = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
+                        // Update the other column indices
+                        var sold_qty = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
 
-                        var purchased_qty = api.column(7, { page: 'current' }).data().reduce(function (a, b) {
+                        var sold_amount = api.column(7, { page: 'current' }).data().reduce(function (a, b) {
+                            return intVal(a) + intVal(b);
+                        }, 0);
+
+                        var purchased_qty = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
 
                      
-                        var purchased_amount = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
+                        var purchased_amount = api.column(9, { page: 'current' }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
 
@@ -193,17 +228,18 @@
                         // Update footer
                         var numberRenderer = $.fn.dataTable.render.number(',', '.', 2).display;
 
-                        $(api.column(5).footer()).html(numberRenderer(sold_qty));
-                        $(api.column(7).footer()).html(numberRenderer(purchased_qty));
+                        $(api.column(5).footer()).html(numberRenderer(current_stock));
+                        $(api.column(6).footer()).html(numberRenderer(sold_qty));
 
                         if ($symbol_placement == 'before') {
-                            $(api.column(6).footer()).html('{{$currency}}' +' '+ numberRenderer(sold_amount));
-                            $(api.column(8).footer()).html('{{$currency}}' +' '+ numberRenderer(purchased_amount));
+                            $(api.column(7).footer()).html('{{$currency}}' +' '+ numberRenderer(sold_amount));
+                            $(api.column(9).footer()).html('{{$currency}}' +' '+ numberRenderer(purchased_amount));
                         }else{
-                            $(api.column(6).footer()).html(numberRenderer(sold_amount) +' ' +'{{$currency}}');
-                            $(api.column(8).footer()).html(numberRenderer(purchased_amount) +' ' +'{{$currency}}');
+                            $(api.column(7).footer()).html(numberRenderer(sold_amount) +' ' +'{{$currency}}');
+                            $(api.column(9).footer()).html(numberRenderer(purchased_amount) +' ' +'{{$currency}}');
                         }
 
+                        $(api.column(8).footer()).html(numberRenderer(purchased_qty));
                        
                     },
                 

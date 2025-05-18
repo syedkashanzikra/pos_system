@@ -319,28 +319,68 @@ class ReportController extends Controller
     
     //------------ report_product -----------\\
 
-    public function report_product(Request $request)
-    {
-        $user_auth = auth()->user();
-        if ($user_auth->can('report_products')){
+public function report_product(Request $request)
+{
+    $user_auth = auth()->user();
+    if ($user_auth->can('report_products')){
 
         if($user_auth->is_all_warehouses){
             $warehouses = Warehouse::where('deleted_at', '=', null)->get(['id', 'name']);
+            $array_warehouses_id = $warehouses->pluck('id')->toArray();
         }else{
             $array_warehouses_id = UserWarehouse::where('user_id', $user_auth->id)->pluck('warehouse_id')->toArray();
             $warehouses = Warehouse::where('deleted_at', '=', null)->whereIn('id', $array_warehouses_id)->get(['id', 'name']);
         }
         
-            return view('reports.report_product', compact('warehouses'));
-
+        // Get all products
+        $products = Product::where('deleted_at', '=', null)->get();
+        
+        // Calculate total products
+        $totalProducts = $products->count();
+        
+        // Initialize variables for total quantity and total value
+        $totalQuantity = 0;
+        $totalValueAtCost = 0;
+        
+        foreach ($products as $product) {
+            if ($product->type == 'is_variant') {
+                // For variant products
+                $variants = ProductVariant::where('product_id', $product->id)
+                    ->where('deleted_at', '=', null)
+                    ->get();
+                
+                foreach ($variants as $variant) {
+                    $product_qty = product_warehouse::where('product_id', $product->id)
+                        ->where('product_variant_id', $variant->id)
+                        ->whereIn('warehouse_id', $array_warehouses_id)
+                        ->where('deleted_at', '=', null)
+                        ->sum('qte');
+                    
+                    $totalQuantity += $product_qty;
+                    $totalValueAtCost += $product_qty * $variant->cost;
+                }
+            } elseif ($product->type == 'is_single') {
+                // For standard products
+                $product_qty = product_warehouse::where('product_id', $product->id)
+                    ->whereIn('warehouse_id', $array_warehouses_id)
+                    ->where('deleted_at', '=', null)
+                    ->sum('qte');
+                
+                $totalQuantity += $product_qty;
+                $totalValueAtCost += $product_qty * $product->cost;
+            }
+            // Service products don't have quantity or cost value
         }
-        return abort('403', __('You are not authorized'));
-
+        
+        return view('reports.report_product', compact('warehouses', 'totalProducts', 'totalQuantity', 'totalValueAtCost'));
     }
+    
+    return abort('403', __('You are not authorized'));
+}
 
     //------------ get_report_product_datatable-----------\\
 
-    public function get_report_product_datatable(Request $request)
+  public function get_report_product_datatable(Request $request)
     {
         $user_auth = auth()->user();
         if (!$user_auth->can('report_products')){
@@ -424,6 +464,22 @@ class ReportController extends Controller
                         $nestedData['warehouse_name'] = $warehouse_name;
                         $nestedData['category'] = $product->category->name;
                         $nestedData['type'] = 'Variable';
+
+                        // Calculate current stock for variant
+                        $product_warehouse_total_qty = product_warehouse::where('product_id', $product->id)
+                            ->where('product_variant_id', $variant_id)
+                            ->where(function ($query) use ($warehouse_id, $array_warehouses_id) {
+                                if ($warehouse_id !== 0) {
+                                    return $query->where('warehouse_id', $warehouse_id);
+                                } else {
+                                    return $query->whereIn('warehouse_id', $array_warehouses_id);
+                                }
+                            })
+                            ->where('deleted_at', '=', null)
+                            ->sum('qte');
+
+                        $unit = Unit::find($product->unit_id);
+                        $nestedData['current_stock'] = $product_warehouse_total_qty . ' ' . ($unit ? $unit->ShortName : '');
 
                         $sold_amount = SaleDetail::with('sale')->where([
                                 ['product_id', $product->id],
@@ -565,6 +621,9 @@ class ReportController extends Controller
                         $nestedData['category'] = $product->category->name;
                         $nestedData['type'] = 'Service';
 
+                        // Service products don't have stock
+                        $nestedData['current_stock'] = '----';
+
                         $sold_amount = SaleDetail::with('sale')
                         ->where(function ($query) use ($request, $warehouse_id, $array_warehouses_id) {
                             if ($warehouse_id !== 0) {
@@ -626,6 +685,21 @@ class ReportController extends Controller
                         $nestedData['warehouse_name'] = $warehouse_name;
                         $nestedData['category'] = $product->category->name;
                         $nestedData['type'] = 'Standard';
+
+                        // Calculate current stock for standard product
+                        $product_warehouse_total_qty = product_warehouse::where('product_id', $product->id)
+                            ->where(function ($query) use ($warehouse_id, $array_warehouses_id) {
+                                if ($warehouse_id !== 0) {
+                                    return $query->where('warehouse_id', $warehouse_id);
+                                } else {
+                                    return $query->whereIn('warehouse_id', $array_warehouses_id);
+                                }
+                            })
+                            ->where('deleted_at', '=', null)
+                            ->sum('qte');
+
+                        $unit = Unit::find($product->unit_id);
+                        $nestedData['current_stock'] = $product_warehouse_total_qty . ' ' . ($unit ? $unit->ShortName : '');
 
                         $sold_amount = SaleDetail::with('sale')->where('product_id', $product->id)
 
@@ -770,8 +844,6 @@ class ReportController extends Controller
         }
 
     }
-       
-  
 
     //------------ report_clients-----------\\
 
