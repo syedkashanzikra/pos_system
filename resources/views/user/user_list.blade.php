@@ -52,7 +52,7 @@
                     <span class="badge badge-danger m-2">{{ __('translate.Inactive') }}</span>
                     @endif
                   </td>
-                  <td>{{$user->RoleUser['name']}}</td>
+                  <td>{{$user->RoleUser['name'] ?? 'no Role'}}</td>
                   @can('group_permission')
                   @if($user->role_users_id === 1 || $user->role_users_id === 2)
                   <td>{{ __('translate.Cannot_change_Default_Permissions') }}</td>
