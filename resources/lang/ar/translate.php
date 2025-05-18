@@ -15,6 +15,7 @@ return [
     'monthly_sales' => 'المبيعات الشهرية',
     'Inventory_report' => 'تقرير المخزون',
     'Roles' => 'الأدوار',
+    'Current_date_and_time_is_used_automatically' => 'تاريخ ووقت النظام الحالي مستخدم تلقائيًا',
     'Product_Type' => 'نوع المنتج',
     'Minimum_sale_quantity' => 'الحد الأدنى من كمية البيع',
     'Add_a_Promotion_Price' => 'أضف سعرًا ترويجيًا',

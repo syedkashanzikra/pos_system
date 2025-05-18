@@ -16,6 +16,7 @@ return [
     'monthly_sales' => 'Ventes mensuelles',
     'Inventory_report' => 'Rapport d\'inventaire',
     'Roles' => 'Rôles',
+    'Current_date_and_time_is_used_automatically' => 'La date et l\'heure actuelles sont utilisées automatiquement',
     'Product_Type' => 'Type de produit',
     'Minimum_sale_quantity' => 'Quantité minimale de vente',
     'Add_a_Promotion_Price' => 'Ajouter un prix promotionnel',

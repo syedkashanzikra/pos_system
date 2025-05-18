@@ -15,6 +15,7 @@ return [
     'monthly_sales' => 'Monthly sales',
     'Inventory_report' => 'Inventory report',
     'Roles' => 'Roles',
+    'Current_date_and_time_is_used_automatically' => 'Current date and time is used automatically',
     'Product_Type' => 'Product Type',
     'Minimum_sale_quantity' => 'Minimum sale quantity',
     'Add_a_Promotion_Price' => 'Add a Promotion Price',

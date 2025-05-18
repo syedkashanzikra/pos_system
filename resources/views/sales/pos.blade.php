@@ -380,23 +380,19 @@
                           <div class="row">
 
                               <div class="col-md-6">
-                                  <validation-provider name="date" rules="required" v-slot="validationContext">
-                                    <div class="form-group">
-                                      <label for="picker3">{{ __('translate.Date') }}</label>
-                  
-                                      <input type="text" 
-                                        :state="getValidationState(validationContext)" 
-                                        aria-describedby="date-feedback" 
-                                        class="form-control" 
-                                        placeholder="{{ __('translate.Select_Date') }}"  
-                                        id="datetimepicker" 
-                                        v-model="payment.date">
-                  
-                                      <span class="error">@{{  validationContext.errors[0] }}</span>
-                                    </div>
-                                  </validation-provider>
-                                </div>
-
+  <div class="form-group">
+    <label for="current_date">{{ __('translate.Date') }}</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="current_date" 
+      v-model="payment.date"
+      readonly
+      style="background-color: #f8f9fa;"
+    >
+    <small class="text-muted">{{ __('translate.Current_date_and_time_is_used_automatically') }}</small>
+  </div>
+</div>
                             <!-- Paying_Amount -->
                             <div class="form-group col-md-6">
                               <validation-provider name="Montant à payer"
